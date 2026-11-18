@@ -67,7 +67,7 @@ con pocas dependencias entre sí.
 | Línea | Persona | Alcance |
 |---|---|---|
 | A | `EvilandAoki` | Héroes y combate: caballero, habilidades, bardo, canción, VFX de habilidades, HUD y diálogos |
-| B | `Kev407` | Enemigos, nivel e integración: IA de demonios, hordas, flujo del nivel, escena principal, builds |
+| B | `kev405` | Enemigos, nivel e integración: IA de demonios, hordas, flujo del nivel, escena principal, builds |
 | C | `alejandro9481` | Arte, animación, audio y narrativa: Tripo3D, Mixamo, música y efectos, guion |
 
 Filtra los issues por etiqueta `linea-A`, `linea-B` o `linea-C`. El flujo de trabajo está en
