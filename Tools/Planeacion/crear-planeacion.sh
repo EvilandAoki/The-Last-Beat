@@ -33,6 +33,7 @@ EQUIPO="$SCRIPT_DIR/equipo.json"
 DRY=0
 CERRAR=0
 DESDE=1
+SIN_ASIGNAR=""
 
 die() { echo "Error: $*" >&2; exit 1; }
 
@@ -45,6 +46,7 @@ OPCIONES
   --titulo "Nombre del proyecto"
   --tareas ruta.json    (por defecto tareas.json junto al script)
   --equipo ruta.json    (por defecto equipo.json junto al script)
+  --sin-asignar A,B,C   líneas cuyos issues se crean sin assignee (p. ej. aún no es colaborador)
   --desde N             reanuda la creación de issues desde la tarea N
   --cerrar-hechas       cierra los issues con "closes #N" en main y termina
   --dry-run             muestra los comandos sin ejecutarlos
@@ -59,6 +61,7 @@ while [[ $# -gt 0 ]]; do
     --tareas)        TAREAS="${2:-}"; shift 2 ;;
     --equipo)        EQUIPO="${2:-}"; shift 2 ;;
     --desde)         DESDE="${2:-}"; shift 2 ;;
+    --sin-asignar)   SIN_ASIGNAR="${2:-}"; shift 2 ;;
     --cerrar-hechas) CERRAR=1; shift ;;
     --dry-run)       DRY=1; shift ;;
     -h|--help)       uso; exit 0 ;;
@@ -116,7 +119,7 @@ if (( ! DRY )); then
     existentes="$(gh issue list --repo "$REPO" --state all --limit 1 --json number --jq length)"
     [[ "$existentes" == "0" ]] || die "el repositorio ya tiene issues. Usa uno nuevo para que el issue #N coincida con la tarea N (o --desde N para reanudar)."
   fi
-  for u in $(python3 -I -c 'import json,sys; print(" ".join(json.load(open(sys.argv[1], encoding="utf-8")).values()))' "$EQUIPO"); do
+  for u in $(python3 -I -c 'import json,sys; omit=sys.argv[2].split(","); print(" ".join(u for k,u in json.load(open(sys.argv[1], encoding="utf-8")).items() if k not in omit))' "$EQUIPO" "$SIN_ASIGNAR"); do
     gh api "users/$u" --silent 2>/dev/null || die "el usuario de GitHub '$u' no existe (revisa equipo.json)"
     gh api "repos/$REPO/collaborators/$u" --silent 2>/dev/null || die "'$u' no es colaborador de $REPO. Invítalo en Settings > Collaborators y vuelve a ejecutar."
   done
@@ -130,11 +133,12 @@ HITO2="Entrega final"
 [[ -z "$FECHA_FINAL" ]] || HITO2="Entrega final ($FECHA_FINAL)"
 
 # Prepara cuerpos de issues e índice (n, título, etiquetas, hito, responsable).
-python3 -I - "$TAREAS" "$EQUIPO" "$WORK" "$HITO1" "$HITO2" <<'PY'
+python3 -I - "$TAREAS" "$EQUIPO" "$WORK" "$HITO1" "$HITO2" "$SIN_ASIGNAR" <<'PY'
 import json, sys
 tareas = json.load(open(sys.argv[1], encoding="utf-8"))
 equipo = json.load(open(sys.argv[2], encoding="utf-8"))
 out, hito1, hito2 = sys.argv[3], sys.argv[4], sys.argv[5]
+sin_asignar = set(sys.argv[6].split(","))
 hitos = {1: hito1, 2: hito2}
 total = len(tareas)
 filas = []
@@ -157,7 +161,8 @@ for t in tareas:
     if t.get("sinCodigo"): labels.append("sin-código")
     if t.get("hito"): labels.append("hito")
     if resp: labels.append("linea-" + resp)
-    filas.append("\t".join([str(n), titulo, ",".join(labels), hito, usuario]))
+    asignado = "" if resp in sin_asignar else usuario
+    filas.append("\t".join([str(n), titulo, ",".join(labels), hito, asignado]))
 with open(out + "/indice.tsv", "w", encoding="utf-8") as f:
     f.write("\n".join(filas) + "\n")
 PY
