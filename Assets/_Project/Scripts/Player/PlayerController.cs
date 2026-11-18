@@ -25,8 +25,12 @@ namespace TheLastBeat.Player
         [Tooltip("Grados por segundo.")]
         [SerializeField, Min(0f)] private float turnSpeed = 720f;
         [SerializeField] private float gravity = -25f;
+        [Tooltip("Si está activo, el personaje no gira hacia donde se mueve: mira fijo y usa strafe (MoveX/MoveZ).")]
+        [SerializeField] private bool strafeMode;
 
         private static readonly int SpeedHash = Animator.StringToHash("Speed");
+        private static readonly int MoveXHash = Animator.StringToHash("MoveX");
+        private static readonly int MoveZHash = Animator.StringToHash("MoveZ");
 
         private CharacterController controller;
         private Vector3 horizontalVelocity;
@@ -65,9 +69,17 @@ namespace TheLastBeat.Player
 
             controller.Move((horizontalVelocity + Vector3.up * verticalVelocity) * dt);
 
-            if (CanMove && DesiredDirection.sqrMagnitude > 0.01f) RotateTowards(DesiredDirection, turnSpeed * dt);
+            if (!strafeMode && CanMove && DesiredDirection.sqrMagnitude > 0.01f) RotateTowards(DesiredDirection, turnSpeed * dt);
 
-            if (animator != null) animator.SetFloat(SpeedHash, NormalizedSpeed, 0.1f, dt);
+            if (animator != null)
+            {
+                animator.SetFloat(SpeedHash, NormalizedSpeed, 0.1f, dt);
+
+                // Velocidad en el espacio local del personaje (-1 a 1): X = lateral, Z = adelante/atrás.
+                Vector3 local = moveSpeed > 0f ? transform.InverseTransformDirection(horizontalVelocity) / moveSpeed : Vector3.zero;
+                animator.SetFloat(MoveXHash, local.x, 0.1f, dt);
+                animator.SetFloat(MoveZHash, local.z, 0.1f, dt);
+            }
         }
 
         /// <summary>Bloquea el movimiento. Cada AddMoveLock necesita su RemoveMoveLock.</summary>
