@@ -12,7 +12,7 @@ namespace TheLastBeat.EditorTools
 {
     /// <summary>
     /// Prepara el héroe provisional (Hero.fbx, hecho con Tools/Blender/build_hero.py) y la escena de
-    /// pruebas Test_Combo (copia reducida de Pueblo): importación Humanoid, Animator con Idle/Run/Attack1-3,
+    /// pruebas Test_Combo (copia reducida de Pueblo): importación Humanoid, Animator con Idle/Run/Light1-2/Heavy1-2,
     /// escena sin casas ni muros y NavMesh propio. No toca Pueblo.unity ni su NavMesh.
     /// Menú: The Last Beat/Hero/Crear escenario de prueba de combate. Es repetible.
     /// </summary>
@@ -33,9 +33,10 @@ namespace TheLastBeat.EditorTools
         {
             ("Armature|Idle", "Idle", true, -1, 60),
             ("Armature|Run", "Run", true, -1, 20),
-            ("Armature|Attack1", "Attack1", false, 12, 26),
-            ("Armature|Attack2", "Attack2", false, 11, 24),
-            ("Armature|Attack3", "Attack3", false, 13, 30),
+            ("Armature|Light1", "Light1", false, 9, 22),
+            ("Armature|Light2", "Light2", false, 9, 22),
+            ("Armature|Heavy1", "Heavy1", false, 16, 34),
+            ("Armature|Heavy2", "Heavy2", false, 17, 38),
         };
 
         [MenuItem("The Last Beat/Hero/Crear escenario de prueba de combate")]
@@ -57,7 +58,7 @@ namespace TheLastBeat.EditorTools
             AnimatorController controller = SetupController();
             if (controller == null) return;
             SetupScene(controller);
-            Debug.Log("[HeroTestSetup] Listo. Abre Test_Combo, dale Play y ataca con clic izquierdo o J.");
+            Debug.Log("[HeroTestSetup] Listo. Abre Test_Combo, dale Play y ataca con J (débil) y K (fuerte).");
         }
 
         private static bool SetupModel()
@@ -142,7 +143,6 @@ namespace TheLastBeat.EditorTools
             foreach (AnimatorControllerParameter p in controller.parameters.ToArray()) controller.RemoveParameter(p);
 
             controller.AddParameter("Speed", AnimatorControllerParameterType.Float);
-            controller.AddParameter("Attack", AnimatorControllerParameterType.Trigger);
             controller.AddParameter("MoveX", AnimatorControllerParameterType.Float);
             controller.AddParameter("MoveZ", AnimatorControllerParameterType.Float);
 
@@ -155,9 +155,6 @@ namespace TheLastBeat.EditorTools
 
             AnimatorState idle = Add("Idle", clips["Idle"], new Vector3(250, 0, 0));
             AnimatorState run = Add("Run", clips["Run"], new Vector3(250, 120, 0));
-            AnimatorState a1 = Add("Attack1", clips["Attack1"], new Vector3(520, 0, 0));
-            AnimatorState a2 = Add("Attack2", clips["Attack2"], new Vector3(520, 120, 0));
-            AnimatorState a3 = Add("Attack3", clips["Attack3"], new Vector3(520, 240, 0));
             machine.defaultState = idle;
 
             // Locomoción
@@ -168,32 +165,20 @@ namespace TheLastBeat.EditorTools
             t.hasExitTime = false; t.duration = 0.12f;
             t.AddCondition(AnimatorConditionMode.Less, 0.1f, "Speed");
 
-            // Primer golpe desde Idle o Run
-            foreach (AnimatorState from in new[] { idle, run })
+            // Los golpes los lanza PlayerCombat (CrossFade) y encadena el combo en código.
+            // Aquí solo hace falta que cada golpe vuelva a Idle cuando termina sin que lo continúen.
+            float y = 0f;
+            foreach (string name in new[] { "Light1", "Light2", "Heavy1", "Heavy2" })
             {
-                t = from.AddTransition(a1);
-                t.hasExitTime = false; t.duration = 0.05f;
-                t.AddCondition(AnimatorConditionMode.If, 0, "Attack");
+                AnimatorState attack = Add(name, clips[name], new Vector3(520, y, 0));
+                y += 90f;
+                AnimatorStateTransition back = attack.AddTransition(idle);
+                back.hasExitTime = true; back.exitTime = 0.92f; back.duration = 0.12f;
             }
-
-            // Encadenar: el trigger se guarda hasta que pasa el 45 % del golpe; si no llega, vuelve a Idle.
-            Chain(a1, a2);
-            Chain(a2, a3);
-            t = a3.AddTransition(idle);
-            t.hasExitTime = true; t.exitTime = 0.95f; t.duration = 0.1f;
 
             EditorUtility.SetDirty(controller);
             AssetDatabase.SaveAssets();
             return controller;
-
-            void Chain(AnimatorState from, AnimatorState next)
-            {
-                AnimatorStateTransition chain = from.AddTransition(next);
-                chain.hasExitTime = true; chain.exitTime = 0.45f; chain.duration = 0.08f;
-                chain.AddCondition(AnimatorConditionMode.If, 0, "Attack");
-                AnimatorStateTransition back = from.AddTransition(idle);
-                back.hasExitTime = true; back.exitTime = 0.95f; back.duration = 0.1f;
-            }
         }
 
         private static void SetupScene(AnimatorController controller)
@@ -295,10 +280,27 @@ namespace TheLastBeat.EditorTools
             serialized.FindProperty("animator").objectReferenceValue = animator;
             serialized.ApplyModifiedProperties();
 
-            var combat = knight.GetComponent<PlayerCombat>();
-            if (combat == null) combat = knight.AddComponent<PlayerCombat>();
+            // El árbol de combos cambió (Light1-2, Heavy1-2): se recrea el componente, pero se conservan
+            // los tiempos que ya hayas ajustado en el Inspector.
+            string[] tunables = { "comboWindow", "inputBuffer", "stepDelay", "finisherRecovery", "movementWhileAttacking" };
+            var saved = new System.Collections.Generic.Dictionary<string, float>();
+            var oldCombat = knight.GetComponent<PlayerCombat>();
+            if (oldCombat != null)
+            {
+                var oldSerialized = new SerializedObject(oldCombat);
+                foreach (string name in tunables)
+                {
+                    SerializedProperty prop = oldSerialized.FindProperty(name);
+                    if (prop != null) saved[name] = prop.floatValue;
+                }
+
+                Object.DestroyImmediate(oldCombat);
+            }
+
+            var combat = knight.AddComponent<PlayerCombat>();
             var combatSerialized = new SerializedObject(combat);
             combatSerialized.FindProperty("animator").objectReferenceValue = animator;
+            foreach (var pair in saved) combatSerialized.FindProperty(pair.Key).floatValue = pair.Value;
             combatSerialized.ApplyModifiedProperties();
         }
 

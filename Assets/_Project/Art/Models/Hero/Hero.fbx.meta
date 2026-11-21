@@ -18,17 +18,20 @@ ModelImporter:
     removeConstantScaleCurves: 0
     motionNodeName: 
     animationImportErrors: 
-    animationImportWarnings: "\nClip 'Armature|Attack1' has import animation warnings
+    animationImportWarnings: "\nClip 'Armature|Heavy1' has import animation warnings
       that might lower retargeting quality:\nNote: Activate translation DOF on avatar
       to improve retargeting quality.\n\t'mixamorig:Spine' is inbetween humanoid
-      transforms and has rotation animation that will be discarded.\n\nClip 'Armature|Attack2'
+      transforms and has rotation animation that will be discarded.\n\nClip 'Armature|Heavy2'
       has import animation warnings that might lower retargeting quality:\nNote:
       Activate translation DOF on avatar to improve retargeting quality.\n\t'mixamorig:Spine'
       is inbetween humanoid transforms and has rotation animation that will be discarded.\n\nClip
-      'Armature|Attack3' has import animation warnings that might lower retargeting
+      'Armature|Idle' has import animation warnings that might lower retargeting
       quality:\nNote: Activate translation DOF on avatar to improve retargeting quality.\n\t'mixamorig:Spine'
       is inbetween humanoid transforms and has rotation animation that will be discarded.\n\nClip
-      'Armature|Idle' has import animation warnings that might lower retargeting
+      'Armature|Light1' has import animation warnings that might lower retargeting
+      quality:\nNote: Activate translation DOF on avatar to improve retargeting quality.\n\t'mixamorig:Spine'
+      is inbetween humanoid transforms and has rotation animation that will be discarded.\n\nClip
+      'Armature|Light2' has import animation warnings that might lower retargeting
       quality:\nNote: Activate translation DOF on avatar to improve retargeting quality.\n\t'mixamorig:Spine'
       is inbetween humanoid transforms and has rotation animation that will be discarded.\n\nClip
       'Armature|Run' has import animation warnings that might lower retargeting quality:\nNote:
@@ -105,11 +108,11 @@ ModelImporter:
       maskSource: {instanceID: 0}
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
-      name: Attack1
-      takeName: Armature|Attack1
-      internalID: -4552515205397978273
+      name: Light1
+      takeName: Armature|Light1
+      internalID: -3113279025539532616
       firstFrame: 0
-      lastFrame: 26
+      lastFrame: 22
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -129,7 +132,7 @@ ModelImporter:
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
       curves: []
       events:
-      - time: 0.46153846
+      - time: 0.4090909
         functionName: OnHit
         data: 
         objectReferenceParameter: {instanceID: 0}
@@ -141,11 +144,11 @@ ModelImporter:
       maskSource: {instanceID: 0}
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
-      name: Attack2
-      takeName: Armature|Attack2
-      internalID: -729247239487951332
+      name: Light2
+      takeName: Armature|Light2
+      internalID: 1619102068612108807
       firstFrame: 0
-      lastFrame: 24
+      lastFrame: 22
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -165,7 +168,7 @@ ModelImporter:
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
       curves: []
       events:
-      - time: 0.45833334
+      - time: 0.4090909
         functionName: OnHit
         data: 
         objectReferenceParameter: {instanceID: 0}
@@ -177,11 +180,11 @@ ModelImporter:
       maskSource: {instanceID: 0}
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
-      name: Attack3
-      takeName: Armature|Attack3
-      internalID: 1679763308670167783
+      name: Heavy1
+      takeName: Armature|Heavy1
+      internalID: 4088227190952517961
       firstFrame: 0
-      lastFrame: 30
+      lastFrame: 34
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -201,7 +204,43 @@ ModelImporter:
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
       curves: []
       events:
-      - time: 0.43333334
+      - time: 0.47058824
+        functionName: OnHit
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      transformMask: []
+      maskType: 3
+      maskSource: {instanceID: 0}
+      additiveReferencePoseFrame: 0
+    - serializedVersion: 16
+      name: Heavy2
+      takeName: Armature|Heavy2
+      internalID: 8431896915703866457
+      firstFrame: 0
+      lastFrame: 38
+      wrapMode: 0
+      orientationOffsetY: 0
+      level: 0
+      cycleOffset: 0
+      loop: 0
+      hasAdditiveReferencePose: 0
+      loopTime: 0
+      loopBlend: 0
+      loopBlendOrientation: 0
+      loopBlendPositionY: 1
+      loopBlendPositionXZ: 0
+      keepOriginalOrientation: 0
+      keepOriginalPositionY: 1
+      keepOriginalPositionXZ: 0
+      heightFromFeet: 0
+      mirror: 0
+      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+      curves: []
+      events:
+      - time: 0.4473684
         functionName: OnHit
         data: 
         objectReferenceParameter: {instanceID: 0}

@@ -1,6 +1,6 @@
 """
 Héroe provisional de The Last Beat: esqueleto Humanoid (nombres mixamorig:*), malla low-poly
-con pesos rígidos y clips Idle, Run, Attack1, Attack2, Attack3. Exporta un FBX listo para Unity.
+con pesos rígidos y clips Idle, Run, Light1, Light2, Heavy1 y Heavy2. Exporta un FBX listo para Unity.
 
 Uso:
   snap run blender -b -P Tools/Blender/build_hero.py -- <salida.fbx> [--preview <carpeta>]
@@ -18,7 +18,8 @@ import bpy
 from mathutils import Euler, Matrix, Vector
 
 FPS = 30
-HIT_FRAMES = {"Attack1": 12, "Attack2": 11, "Attack3": 13}
+HIT_FRAMES = {"Light1": 9, "Light2": 9, "Heavy1": 16, "Heavy2": 17}
+CLIP_FRAMES = {"Idle": 60, "Run": 20, "Light1": 22, "Light2": 22, "Heavy1": 34, "Heavy2": 38}
 
 # ----------------------------------------------------------------------------------------------
 # Esqueleto
@@ -277,8 +278,38 @@ def combinar(ops):
     return m
 
 
-def aplicar_pose(arm, pose, frame):
-    """pose: {hueso_sin_prefijo: ops | ('mover', (dx,dy,dz))}. Los no listados vuelven a reposo."""
+REST_CONTACT = 0.0
+FOOT_BONES = ("Foot", "ToeBase", "Toe_End")
+
+
+def contacto(arm):
+    """Altura del punto más bajo de los pies (talón o punta), en el espacio de la armature."""
+    bajo = 1e9
+    for lado in ("Left", "Right"):
+        foot = arm.pose.bones[P + lado + "Foot"].head.z - 0.075
+        toe = arm.pose.bones[P + lado + "ToeBase"].head.z
+        end = arm.pose.bones[P + lado + "Toe_End"].head.z
+        bajo = min(bajo, foot, toe, end)
+    return bajo
+
+
+def pies_planos(pose):
+    """Mantiene las plantas paralelas al suelo: compensa el cabeceo del muslo y la pantorrilla."""
+    for lado in ("Left", "Right"):
+        cabeceo = 0.0
+        for hueso in ("UpLeg", "Leg"):
+            for eje, grados in pose.get(lado + hueso, []):
+                if eje == "X":
+                    cabeceo += grados
+        pose[lado + "Foot"] = [("X", -cabeceo)]
+    return pose
+
+
+def aplicar_pose(arm, pose, frame, suelo=True):
+    """
+    pose: {hueso_sin_prefijo: ops, 'Hips.loc': (dx, dy, dz)}. Los no listados vuelven a reposo.
+    Con suelo=True las caderas suben o bajan para que el pie más bajo toque el suelo (sin flotar ni hundirse).
+    """
     for pb in arm.pose.bones:
         corto = pb.name[len(P):]
         rot_reposo = pb.bone.matrix_local.to_3x3()
@@ -289,14 +320,20 @@ def aplicar_pose(arm, pose, frame):
         else:
             rot = combinar(spec)
             pb.rotation_quaternion = (rot_reposo.inverted() @ rot @ rot_reposo).to_quaternion()
+        pb.location = (0, 0, 0)
+
+    hips = arm.pose.bones[P + "Hips"]
+    rot_hips = hips.bone.matrix_local.to_3x3()
+    desp = Vector(pose.get("Hips.loc", (0, 0, 0)))
+    hips.location = rot_hips.inverted() @ desp
+    if suelo:
+        bpy.context.view_layer.update()
+        desp.z += REST_CONTACT - contacto(arm)
+        hips.location = rot_hips.inverted() @ desp
+
+    for pb in arm.pose.bones:
         pb.keyframe_insert("rotation_quaternion", frame=frame)
-        desp = pose.get(corto + ".loc")
-        if desp is not None:
-            pb.location = rot_reposo.inverted() @ Vector(desp)
-        else:
-            pb.location = (0, 0, 0)
-        if corto == "Hips":
-            pb.keyframe_insert("location", frame=frame)
+    hips.keyframe_insert("location", frame=frame)
 
 
 # Postura base: brazos abajo, espadón en alto hacia delante, rodillas ligeras.
@@ -323,31 +360,59 @@ def nueva_accion(arm, nombre, frames):
     return accion
 
 
-def clip(arm, nombre, frames, claves):
+def clip(arm, nombre, claves, suelo=True):
+    frames = CLIP_FRAMES[nombre]
     nueva_accion(arm, nombre, frames)
     for frame, pose in claves:
-        aplicar_pose(arm, pose, frame)
+        aplicar_pose(arm, pose, frame, suelo)
 
 
 def torso(giro=0.0, inclina=0.0):
+    """Giro e inclinación repartidos: el pecho gira más que la cintura, así el cuerpo 'late' tras las caderas."""
     return {
-        "Spine": [("Z", giro * 0.3), ("X", inclina * 0.3)],
+        "Spine": [("Z", giro * 0.2), ("X", inclina * 0.25)],
         "Spine1": [("Z", giro * 0.3), ("X", inclina * 0.3)],
-        "Spine2": [("Z", giro * 0.4), ("X", inclina * 0.4)],
+        "Spine2": [("Z", giro * 0.5), ("X", inclina * 0.45)],
+        "Neck": [("Z", -giro * 0.15)],
+        "Head": [("Z", -giro * 0.2), ("X", -inclina * 0.3)],
     }
 
 
+def piernas(p, lado, paso, yaw):
+    """Apoyo: la pierna 'lado' ('L' o 'R') avanza con el paso (0 a 1); la otra queda atrás. Pies planos."""
+    adel, atras = ("Left", "Right") if lado == "L" else ("Right", "Left")
+    p[adel + "UpLeg"] = [("X", -4 - 36 * paso), ("Z", -yaw * 0.9)]
+    p[adel + "Leg"] = [("X", 6 + 42 * paso)]
+    p[atras + "UpLeg"] = [("X", 4 + 14 * paso), ("Z", -yaw * 0.9)]
+    p[atras + "Leg"] = [("X", 6 + 14 * paso)]
+    return p
+
+
+def golpe(giro=0, yaw=0, inclina=0, paso=0, lado="L", brazo=None, codo=0, mano=None, avance=0.0, izq=None):
+    """Una pose de ataque con el brazo derecho. brazo = ops de RightArm; el resto acompaña."""
+    p = base(**torso(giro, inclina))
+    p["Hips"] = [("Z", yaw)]
+    p["RightArm"] = brazo if brazo is not None else [("Y", -64)]
+    p["RightForeArm"] = [("Z", codo)]
+    p["RightHand"] = mano if mano is not None else [("Y", 20)]
+    p["LeftArm"] = izq if izq is not None else [("Y", 60), ("X", -giro * 0.5)]
+    piernas(p, lado, paso, yaw)
+    p["Hips.loc"] = (0, -0.14 * paso * avance, 0)
+    return pies_planos(p)
+
+
 def crear_clips(arm):
+    global REST_CONTACT
     # --- Idle (60 f): respiración suave y balanceo del arma
     def idle(resp, sway):
         p = base(**torso(0, 1.5 * resp))
-        p["Hips.loc"] = (0, 0, -0.012 * resp)
+        p["Hips.loc"] = (0, 0, -0.01 * resp)
         p["Head"] = [("X", -1.0 * resp)]
         p["RightHand"] = [("Y", 150 + 3 * sway), ("X", 20)]
         p["RightArm"] = [("Y", -64 + 2 * sway)]
-        return p
+        return pies_planos(p)
 
-    clip(arm, "Idle", 60, [(0, idle(0, 0)), (30, idle(1, 1)), (60, idle(0, 0))])
+    clip(arm, "Idle", [(0, idle(0, 0)), (30, idle(1, 1)), (60, idle(0, 0))])
 
     # --- Run (20 f): zancada con brazos opuestos e inclinación al frente
     def run(pierna_izq_adelante, fase_vertical):
@@ -364,67 +429,62 @@ def crear_clips(arm):
         p["Hips.loc"] = (0, 0, fase_vertical)
         return p
 
-    clip(arm, "Run", 20, [
+    clip(arm, "Run", [
         (0, run(True, -0.02)),
-        (5, _paso(run(True, 0.03), run(False, 0.03), 0.5, pierna_sube=True)),
+        (5, _paso(run(True, 0.03), run(False, 0.03), 0.5)),
         (10, run(False, -0.02)),
-        (15, _paso(run(False, 0.03), run(True, 0.03), 0.5, pierna_sube=True)),
+        (15, _paso(run(False, 0.03), run(True, 0.03), 0.5)),
         (20, run(True, -0.02)),
-    ])
+    ], suelo=False)
 
-    # --- Ataques (todos con el brazo derecho; el cuerpo acompaña)
-    def ataque(giro, brazo_z, brazo_y, codo, pie, adelante, hombro=0):
-        p = base(**torso(giro=giro, inclina=6))
-        p["RightArm"] = [("Y", brazo_y), ("Z", brazo_z)]
-        p["RightForeArm"] = [("Z", codo)]
-        p["RightHand"] = [("Y", 20), ("X", 0)]
-        p["LeftArm"] = [("Y", 60), ("X", -giro * 0.6)]
-        p["LeftUpLeg"] = [("X", -pie)]
-        p["LeftLeg"] = [("X", 6 + pie * 0.8)]
-        p["RightUpLeg"] = [("X", 8)]
-        p["Hips.loc"] = (0, -adelante, -0.03 * (pie > 5))
-        return p
+    guardia = [("Y", 150), ("X", 20)]  # espadón en alto, igual que Idle
+    medio = [("Y", 90), ("X", 10)]     # la muñeca gira entre la guardia y el golpe
+    reposo = golpe(mano=guardia)
 
-    reposo = base()
-    # Ataque 1: tajo horizontal de derecha a izquierda
-    clip(arm, "Attack1", 26, [
+    # --- Light1 (22 f, impacto en 9): tajo horizontal de derecha a izquierda, avanza el pie izquierdo
+    clip(arm, "Light1", [
         (0, reposo),
-        (6, ataque(-38, -40, -8, 55, 0, -0.02)),
-        (12, ataque(38, 100, -6, 8, 24, 0.10)),
-        (18, ataque(48, 122, -6, 10, 22, 0.12)),
-        (26, reposo),
+        (3, golpe(giro=6, yaw=6, paso=0.2, lado="L", brazo=[("Y", -30)], codo=40, mano=medio)),
+        (6, golpe(giro=-34, yaw=-14, inclina=4, paso=0.55, lado="L", brazo=[("Y", -8), ("Z", -45)], codo=60)),
+        (9, golpe(giro=30, yaw=20, inclina=8, paso=1.0, lado="L", brazo=[("Y", -8), ("Z", 95)], codo=10, avance=1)),
+        (13, golpe(giro=44, yaw=26, inclina=8, paso=1.0, lado="L", brazo=[("Y", -8), ("Z", 120)], codo=10, avance=1)),
+        (17, golpe(giro=16, yaw=10, inclina=3, paso=0.5, lado="L", brazo=[("Y", -40), ("Z", 55)], codo=25, avance=1, mano=medio)),
+        (22, reposo),
     ])
-    # Ataque 2: revés de izquierda a derecha
-    clip(arm, "Attack2", 24, [
+    # --- Light2 (22 f, impacto en 9): revés de izquierda a derecha, avanza el pie derecho
+    clip(arm, "Light2", [
         (0, reposo),
-        (5, ataque(42, 118, -6, 10, 18, 0.08)),
-        (11, ataque(-42, -38, -6, 12, 24, 0.10)),
-        (17, ataque(-50, -52, -6, 16, 20, 0.12)),
-        (24, reposo),
+        (3, golpe(giro=-6, yaw=-6, paso=0.2, lado="R", brazo=[("Y", -30)], codo=40, mano=medio)),
+        (6, golpe(giro=36, yaw=18, inclina=4, paso=0.55, lado="R", brazo=[("Y", -6), ("Z", 115)], codo=10)),
+        (9, golpe(giro=-34, yaw=-20, inclina=8, paso=1.0, lado="R", brazo=[("Y", -6), ("Z", -35)], codo=35, avance=1)),
+        (13, golpe(giro=-46, yaw=-26, inclina=8, paso=1.0, lado="R", brazo=[("Y", -6), ("Z", -52)], codo=45, avance=1)),
+        (17, golpe(giro=-16, yaw=-10, inclina=3, paso=0.5, lado="R", brazo=[("Y", -40), ("Z", -20)], codo=30, avance=1, mano=medio)),
+        (22, reposo),
     ])
-    # Ataque 3: estocada vertical (tajo descendente con salto de paso)
-    def vertical(alto, giro, pie, adelante):
-        p = base(**torso(giro=giro, inclina=18 if not alto else -6))
-        p["RightArm"] = [("Y", 100), ("X", -25)] if alto else [("Y", -35), ("Z", 80)]
-        p["RightForeArm"] = [("Z", 20 if alto else 6)]
-        p["RightHand"] = [("Y", 20), ("X", 0)]
-        p["LeftArm"] = [("Y", 55)]
-        p["LeftUpLeg"] = [("X", -pie)]
-        p["LeftLeg"] = [("X", 6 + pie * 0.9)]
-        p["RightUpLeg"] = [("X", 10)]
-        p["Hips.loc"] = (0, -adelante, -0.05 * (pie > 5))
-        return p
-
-    clip(arm, "Attack3", 30, [
+    # --- Heavy1 (34 f, impacto en 16): tajo vertical descendente con paso profundo del pie izquierdo
+    clip(arm, "Heavy1", [
         (0, reposo),
-        (7, vertical(True, 8, 4, 0.0)),
-        (13, vertical(False, -6, 34, 0.18)),
-        (22, vertical(False, -8, 30, 0.20)),
-        (30, reposo),
+        (5, golpe(giro=4, yaw=0, inclina=-3, paso=0.15, lado="L", brazo=[("Y", 40), ("X", -10)], codo=30, mano=medio)),
+        (12, golpe(giro=8, yaw=6, inclina=-12, paso=0.3, lado="L", brazo=[("Y", 100), ("X", -35)], codo=25,
+                   izq=[("Y", 40), ("X", -20)])),
+        (16, golpe(giro=-4, yaw=-4, inclina=24, paso=1.0, lado="L", brazo=[("Y", -35), ("Z", 80)], codo=6, avance=1)),
+        (20, golpe(giro=-6, yaw=-4, inclina=26, paso=1.0, lado="L", brazo=[("Y", -42), ("Z", 82)], codo=6, avance=1)),
+        (27, golpe(giro=0, yaw=0, inclina=10, paso=0.5, lado="L", brazo=[("Y", -50), ("Z", 40)], codo=18, avance=1, mano=medio)),
+        (34, reposo),
+    ])
+    # --- Heavy2 (38 f, impacto en 17): barrido amplio con giro de todo el cuerpo, remate del combo
+    clip(arm, "Heavy2", [
+        (0, reposo),
+        (6, golpe(giro=-52, yaw=-30, inclina=6, paso=0.6, lado="R", brazo=[("Y", -8), ("Z", -60)], codo=70)),
+        (12, golpe(giro=8, yaw=4, inclina=8, paso=0.8, lado="R", brazo=[("Y", -8), ("Z", 40)], codo=30, avance=1)),
+        (17, golpe(giro=62, yaw=40, inclina=10, paso=1.0, lado="L", brazo=[("Y", -8), ("Z", 118)], codo=8, avance=1)),
+        (22, golpe(giro=70, yaw=50, inclina=8, paso=1.0, lado="L", brazo=[("Y", -8), ("Z", 135)], codo=8, avance=1)),
+        (30, golpe(giro=24, yaw=18, inclina=4, paso=0.5, lado="L", brazo=[("Y", -40), ("Z", 60)], codo=24, avance=1, mano=medio)),
+        (38, reposo),
     ])
 
 
-def _paso(a, b, t, pierna_sube=False):
+def _paso(a, b, t):
     """Pose intermedia (paso medio): interpola ángulos de dos poses de zancada y levanta la pierna libre."""
     p = {}
     claves = set(a) | set(b)
@@ -497,9 +557,10 @@ def vista_previa(arm, carpeta):
     muestras = {
         "Idle": [0, 30],
         "Run": [0, 5, 10, 15],
-        "Attack1": [0, 6, 12, 18],
-        "Attack2": [0, 5, 11, 17],
-        "Attack3": [0, 7, 13, 22],
+        "Light1": [0, 6, 9, 13],
+        "Light2": [0, 6, 9, 13],
+        "Heavy1": [0, 12, 16, 20],
+        "Heavy2": [0, 6, 17, 22],
     }
     for nombre, frames in muestras.items():
         arm.animation_data.action = bpy.data.actions[nombre]
@@ -528,6 +589,9 @@ def main():
     crear_malla(arm)
     bpy.context.view_layer.objects.active = arm
     bpy.ops.object.mode_set(mode="POSE")
+    global REST_CONTACT
+    bpy.context.view_layer.update()
+    REST_CONTACT = contacto(arm)
     crear_clips(arm)
     bpy.ops.object.mode_set(mode="OBJECT")
 

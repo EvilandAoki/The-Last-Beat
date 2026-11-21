@@ -15,6 +15,10 @@ namespace TheLastBeat.DebugTools
         [SerializeField] private float respawnDelay = 2f;
         [SerializeField] private Color flashColor = Color.white;
         [SerializeField] private float flashTime = 0.1f;
+        [Tooltip("Segundos que dura el empuje de un golpe. 0 = el maniquí no se mueve.")]
+        [SerializeField] private float pushTime = 0.12f;
+        [Tooltip("Cuánto del Knockback del golpe se convierte en metros de empuje.")]
+        [SerializeField] private float pushScale = 0.25f;
 
         private static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
 
@@ -22,6 +26,7 @@ namespace TheLastBeat.DebugTools
         private Renderer[] renderers;
         private MaterialPropertyBlock block;
         private Vector3 startScale;
+        private Vector3 startPosition;
 
         private void Awake()
         {
@@ -29,6 +34,7 @@ namespace TheLastBeat.DebugTools
             renderers = GetComponentsInChildren<Renderer>();
             block = new MaterialPropertyBlock();
             startScale = transform.localScale;
+            startPosition = transform.position;
         }
 
         private void OnEnable()
@@ -47,7 +53,9 @@ namespace TheLastBeat.DebugTools
         {
             Debug.Log($"[{name}] -{info.Amount:0.#}  vida {source.CurrentHealth:0.#}/{source.MaxHealth:0.#}{(info.IsHeavy ? "  (golpe pesado)" : "")}", this);
             StopAllCoroutines();
-            StartCoroutine(Flash(info.Direction));
+            StartCoroutine(Flash());
+            if (info.Knockback > 0f && pushTime > 0f)
+                StartCoroutine(Push(info.Direction * (info.Knockback * pushScale)));
         }
 
         private void OnDied(Health source, DamageInfo info)
@@ -56,7 +64,20 @@ namespace TheLastBeat.DebugTools
             StartCoroutine(Respawn());
         }
 
-        private IEnumerator Flash(Vector3 direction)
+        private IEnumerator Push(Vector3 delta)
+        {
+            // Empuje simple en el plano: el maniquí no tiene Rigidbody ni IA, solo sirve para ver el efecto.
+            float elapsed = 0f;
+            while (elapsed < pushTime)
+            {
+                float step = Mathf.Min(Time.deltaTime, pushTime - elapsed);
+                transform.position += delta * (step / pushTime);
+                elapsed += step;
+                yield return null;
+            }
+        }
+
+        private IEnumerator Flash()
         {
             SetColor(flashColor);
             transform.localScale = startScale * 1.08f;
@@ -69,6 +90,7 @@ namespace TheLastBeat.DebugTools
         {
             yield return new WaitForSeconds(respawnDelay);
             health.ResetHealth();
+            transform.position = startPosition;
             SetColor(null);
             transform.localScale = startScale;
         }
