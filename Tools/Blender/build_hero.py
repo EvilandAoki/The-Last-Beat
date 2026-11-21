@@ -231,25 +231,31 @@ def crear_malla(arm):
         todas += piezas_lado(lado, s)
     todas += espadon()
 
-    grupos = {}
+    # Un grupo de vértices por hueso; los pesos se escriben en la capa de deformación de bmesh,
+    # sin depender de índices de vértice (que cambian al crear primitivas).
+    indice_grupo = {}
+    for hueso, _, _ in todas:
+        if hueso not in indice_grupo:
+            indice_grupo[hueso] = obj.vertex_groups.new(name=hueso).index
+    dvert = bm.verts.layers.deform.verify()
     for hueso, mat, fn in todas:
         antes = set(bm.verts)
         antes_f = set(bm.faces)
         fn(bm)
-        bm.verts.index_update()
-        nuevos = [v for v in bm.verts if v not in antes]
+        for v in bm.verts:
+            if v not in antes:
+                v[dvert][indice_grupo[hueso]] = 1.0
         for f in bm.faces:
             if f not in antes_f:
                 f.material_index = mat_nombres.index(mat)
                 f.smooth = False
-        grupos.setdefault(hueso, []).extend(v.index for v in nuevos)
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
     bm.to_mesh(mesh)
     bm.free()
 
-    for hueso, indices in grupos.items():
-        vg = obj.vertex_groups.new(name=hueso)
-        vg.add(indices, 1.0, "REPLACE")
+    sin_peso = [v.index for v in mesh.vertices if not v.groups]
+    if sin_peso:
+        raise RuntimeError(f"Hay {len(sin_peso)} vértices sin peso: {sin_peso[:10]}")
     obj.parent = arm
     mod = obj.modifiers.new("Armature", "ARMATURE")
     mod.object = arm
