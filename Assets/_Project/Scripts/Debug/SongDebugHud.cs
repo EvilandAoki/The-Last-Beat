@@ -95,14 +95,34 @@ namespace TheLastBeat.DebugTools
             if (bardHealth != null)
                 GUI.Label(new Rect(x, y, width + 200f, height), $"Bardo: vida {bardHealth.CurrentHealth:0}/{bardHealth.MaxHealth:0}   interrupciones: {interruptions}");
 
-            // Aviso grande en el centro: que se note claramente cuando se corta la canción.
+            // Aviso grande en el centro: blanco con contorno oscuro y fondo, para que se lea sobre cualquier suelo o ambiente.
             if (Time.time < messageUntil)
             {
-                var style = new GUIStyle(GUI.skin.label) { fontSize = 36, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
-                style.normal.textColor = messageIsRepeat ? new Color(1f, 0.7f, 0.2f) : new Color(1f, 0.25f, 0.25f);
                 string text = messageIsRepeat ? "¡CONTADOR REINICIADO!" : "¡CANCIÓN INTERRUMPIDA!";
-                GUI.Label(new Rect(0f, Screen.height * 0.18f, Screen.width, 60f), text, style);
+                DrawBanner(new Rect(0f, Screen.height * 0.18f, Screen.width, 64f), text);
             }
+        }
+
+        private static void DrawBanner(Rect area, string text)
+        {
+            var style = new GUIStyle(GUI.skin.label) { fontSize = 36, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+
+            // Fondo oscuro semitransparente detrás del texto.
+            float width = Mathf.Min(area.width, style.CalcSize(new GUIContent(text)).x + 60f);
+            Rect panel = new Rect(area.x + (area.width - width) * 0.5f, area.y, width, area.height);
+            Color previous = GUI.color;
+            GUI.color = new Color(0f, 0f, 0f, 0.6f);
+            GUI.DrawTexture(panel, Texture2D.whiteTexture);
+            GUI.color = previous;
+
+            // Contorno negro (ocho desplazamientos) y texto blanco encima.
+            style.normal.textColor = Color.black;
+            for (int dx = -2; dx <= 2; dx += 2)
+                for (int dy = -2; dy <= 2; dy += 2)
+                    if (dx != 0 || dy != 0)
+                        GUI.Label(new Rect(area.x + dx, area.y + dy, area.width, area.height), text, style);
+            style.normal.textColor = Color.white;
+            GUI.Label(area, text, style);
         }
 
         private static void Draw(Rect box, string text, Color color)
