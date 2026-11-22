@@ -15,6 +15,8 @@ GameObject:
   - component: {fileID: 9182076120663159386}
   - component: {fileID: 5041481048776938002}
   - component: {fileID: 1982221142888466728}
+  - component: {fileID: 6336561118280671649}
+  - component: {fileID: 5016350286375577779}
   m_Layer: 7
   m_Name: Bardo
   m_TagString: Untagged
@@ -182,3 +184,40 @@ MonoBehaviour:
     m_Bits: 0
   stuckTime: 1.5
   teleportDistance: 25
+--- !u!114 &6336561118280671649
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1626591140499315512}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15e39a91682572a3080341ed292a2866, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TheLastBeat.Buffs.BuffReceiver
+--- !u!114 &5016350286375577779
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1626591140499315512}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5a3498630949a3637a037d94d3d923a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TheLastBeat.Companions.SongBuff
+  radius: 8
+  effect:
+    damageMultiplier: 1.25
+    abilityAreaMultiplier: 1.3
+    dodgeChance: 0.25
+  interruptedDuration: 1
+  recoveryDuration: 3
+  startSinging: 1
+  includeSelf: 1
+  scanInterval: 0.2
+  alliesMask:
+    serializedVersion: 2
+    m_Bits: 0
