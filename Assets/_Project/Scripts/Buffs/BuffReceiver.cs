@@ -5,21 +5,6 @@ using UnityEngine;
 namespace TheLastBeat.Buffs
 {
     /// <summary>
-    /// Lo que una potenciación (como la canción de la bardo) le da a quien la recibe. Los valores de varias fuentes
-    /// se combinan en el BuffReceiver.
-    /// </summary>
-    [Serializable]
-    public class BuffEffect
-    {
-        [Tooltip("Multiplicador del daño del héroe (1 = sin cambio).")]
-        [Min(1f)] public float damageMultiplier = 1.25f;
-        [Tooltip("Multiplicador del área de las habilidades (1 = sin cambio).")]
-        [Min(1f)] public float abilityAreaMultiplier = 1.3f;
-        [Tooltip("Probabilidad (0-1) de evitar un golpe.")]
-        [Range(0f, 1f)] public float dodgeChance = 0.25f;
-    }
-
-    /// <summary>
     /// Va en todo lo que puede ser potenciado (el caballero, la bardo). Guarda las potenciaciones activas, una por
     /// fuente, y expone el resultado combinado. Quien aplica el efecto (por ejemplo SongBuff) llama a Apply y Remove;
     /// quien lo usa (daño, habilidades, esquiva) lee DamageMultiplier, AreaMultiplier y DodgeChance.

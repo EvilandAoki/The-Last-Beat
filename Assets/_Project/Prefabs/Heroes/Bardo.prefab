@@ -210,10 +210,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TheLastBeat.Companions.SongBuff
   radius: 8
-  effect:
-    damageMultiplier: 1.25
-    abilityAreaMultiplier: 1.3
-    dodgeChance: 0.25
+  effect: {fileID: 11400000, guid: 7a597605559d820d9854714c7187a3a6, type: 2}
   interruptedDuration: 1
   recoveryDuration: 3
   startSinging: 1

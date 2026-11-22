@@ -1,5 +1,6 @@
 using TheLastBeat.Buffs;
 using TheLastBeat.Companions;
+using TheLastBeat.Player;
 using TheLastBeat.DebugTools;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -15,6 +16,8 @@ namespace TheLastBeat.EditorTools
     {
         private const string BardPrefab = "Assets/_Project/Prefabs/Heroes/Bardo.prefab";
         private const string TestScenePath = "Assets/_Project/Scenes/Test_Combo.unity";
+        private const string BuffFolder = "Assets/_Project/ScriptableObjects/Buffs";
+        private const string BuffAssetPath = BuffFolder + "/PotenciacionDeCancion.asset";
 
         [MenuItem("The Last Beat/Bardo/Añadir canción (tarea 17)")]
         public static void Run()
@@ -45,6 +48,61 @@ namespace TheLastBeat.EditorTools
             AddHud();
             AssetDatabase.SaveAssets();
             Debug.Log("[SongSetup] Listo. La bardo canta en Test_Combo. Tecla I = interrumpir la canción (prueba).");
+        }
+
+        [MenuItem("The Last Beat/Bardo/Configurar potenciación (tarea 19)")]
+        public static void ConfigureBuff()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                Debug.LogError("[SongSetup] Sal de Play antes de ejecutar esto.");
+                return;
+            }
+
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(BardPrefab) == null ||
+                AssetDatabase.LoadAssetAtPath<GameObject>(KnightPrefabTool.PrefabPath) == null)
+            {
+                Debug.LogError("[SongSetup] Faltan Bardo.prefab o Knight.prefab.");
+                return;
+            }
+
+            // El asset con los valores de la potenciación (si ya existe no se pisa: tus ajustes se conservan).
+            System.IO.Directory.CreateDirectory(BuffFolder);
+            var effect = AssetDatabase.LoadAssetAtPath<BuffEffect>(BuffAssetPath);
+            if (effect == null)
+            {
+                effect = ScriptableObject.CreateInstance<BuffEffect>();
+                effect.damageMultiplier = 1.25f;
+                effect.abilityAreaMultiplier = 1.3f;
+                effect.dodgeChance = 0.25f;
+                AssetDatabase.CreateAsset(effect, BuffAssetPath);
+            }
+
+            // La canción de la bardo usa ese asset.
+            EditPrefab(BardPrefab, root =>
+            {
+                var song = root.GetComponent<SongBuff>();
+                if (song == null)
+                {
+                    Debug.LogError("[SongSetup] La bardo no tiene SongBuff. Ejecuta antes 'Añadir canción (tarea 17)'.");
+                    return;
+                }
+
+                var serialized = new SerializedObject(song);
+                serialized.FindProperty("effect").objectReferenceValue = effect;
+                serialized.ApplyModifiedProperties();
+            });
+
+            // El caballero esquiva y lo avisa.
+            EditPrefab(KnightPrefabTool.PrefabPath, root =>
+            {
+                if (root.GetComponent<BuffReceiver>() == null) root.AddComponent<BuffReceiver>();
+                if (root.GetComponent<KnightAutoDodge>() == null) root.AddComponent<KnightAutoDodge>();
+                if (root.GetComponent<DodgeFeedback>() == null) root.AddComponent<DodgeFeedback>();
+            });
+
+            AssetDatabase.SaveAssets();
+            Debug.Log("[SongSetup] Listo. Potenciación en " + BuffAssetPath + ". En Test_Combo: L = golpe al caballero (prueba de esquiva).");
         }
 
         [MenuItem("The Last Beat/Bardo/Añadir feedback de interrupción (tarea 18)")]

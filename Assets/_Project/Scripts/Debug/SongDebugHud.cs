@@ -1,6 +1,8 @@
 using TheLastBeat.Buffs;
 using TheLastBeat.Combat;
 using TheLastBeat.Companions;
+using TheLastBeat.Core;
+using TheLastBeat.Player;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -18,7 +20,11 @@ namespace TheLastBeat.DebugTools
         [SerializeField] private Key interruptKey = Key.I;
         [SerializeField] private Key hitInterruptsKey = Key.O;
         [SerializeField] private Key hitNoInterruptKey = Key.P;
+        [SerializeField] private Key hitKnightKey = Key.L;
         [SerializeField, Min(0f)] private float testDamage = 5f;
+
+        private Health knightHealth;
+        private KnightAutoDodge knightDodge;
 
         private Health bardHealth;
         private float messageUntil;
@@ -34,6 +40,13 @@ namespace TheLastBeat.DebugTools
                 var player = FindFirstObjectByType<TheLastBeat.Player.PlayerController>();
                 if (player != null) knight = player.GetComponent<BuffReceiver>();
             }
+        }
+
+        private void Start()
+        {
+            if (knight == null) return;
+            knightHealth = knight.GetComponent<Health>();
+            knightDodge = knight.GetComponent<KnightAutoDodge>();
         }
 
         private void OnEnable()
@@ -59,6 +72,15 @@ namespace TheLastBeat.DebugTools
             if (Keyboard.current[interruptKey].wasPressedThisFrame) song.Interrupt();
             if (Keyboard.current[hitInterruptsKey].wasPressedThisFrame) HitBard(true);
             if (Keyboard.current[hitNoInterruptKey].wasPressedThisFrame) HitBard(false);
+            if (Keyboard.current[hitKnightKey].wasPressedThisFrame) HitKnight();
+        }
+
+        private void HitKnight()
+        {
+            if (knightHealth == null) return;
+            DamageInfo info = DamageInfo.Create(testDamage, gameObject, Team.Demons, knightHealth.transform.position + Vector3.up,
+                Vector3.forward, 0f, true, false);
+            knightHealth.TakeDamage(info);
         }
 
         private void HitBard(bool interrupts)
@@ -69,10 +91,12 @@ namespace TheLastBeat.DebugTools
             bardHealth.TakeDamage(info);
         }
 
+        private static readonly Color TextColor = new Color(0.92f, 0.08f, 0.08f);
+        private static readonly Color OutlineColor = Color.black;
+
         private void OnGUI()
         {
-            const float width = 300f, height = 22f;
-            float x = 16f, y = 16f;
+            float y = 16f;
 
             string songLine = song == null ? "Canción: (sin bardo)" : song.State switch
             {
@@ -80,59 +104,36 @@ namespace TheLastBeat.DebugTools
                 SongState.Interrupted => $"Canción: INTERRUMPIDA  {song.StateTimeRemaining:0.0}s",
                 _ => $"Canción: RECUPERANDO  {song.StateTimeRemaining:0.0}s",
             };
-            Draw(new Rect(x, y, width, height), songLine, song != null && song.IsSinging ? new Color(0.4f, 0.9f, 0.5f) : new Color(0.9f, 0.5f, 0.3f));
-            y += height + 4f;
+            Line(ref y, songLine);
 
-            string buffLine = knight == null
+            Line(ref y, knight == null
                 ? "Caballero: (sin BuffReceiver)"
                 : knight.IsBuffed
                     ? $"Caballero: POTENCIADO  daño x{knight.DamageMultiplier:0.##}  área x{knight.AreaMultiplier:0.##}  esquiva {knight.DodgeChance:P0}"
-                    : "Caballero: sin potenciar";
-            Draw(new Rect(x, y, width + 140f, height), buffLine, knight != null && knight.IsBuffed ? new Color(0.4f, 0.8f, 1f) : new Color(0.6f, 0.6f, 0.6f));
-            y += height + 4f;
-            GUI.Label(new Rect(x, y, width + 200f, height), $"[{interruptKey}] interrumpir   [{hitInterruptsKey}] golpe a la bardo (interrumpe)   [{hitNoInterruptKey}] golpe (no interrumpe)");
-            y += height;
-            if (bardHealth != null)
-                GUI.Label(new Rect(x, y, width + 200f, height), $"Bardo: vida {bardHealth.CurrentHealth:0}/{bardHealth.MaxHealth:0}   interrupciones: {interruptions}");
+                    : "Caballero: sin potenciar");
 
-            // Aviso grande en el centro: blanco con contorno oscuro y fondo, para que se lea sobre cualquier suelo o ambiente.
+            if (bardHealth != null)
+                Line(ref y, $"Bardo: vida {bardHealth.CurrentHealth:0}/{bardHealth.MaxHealth:0}   interrupciones: {interruptions}");
+            if (knightHealth != null)
+                Line(ref y, $"Caballero: vida {knightHealth.CurrentHealth:0}/{knightHealth.MaxHealth:0}   esquivas: {(knightDodge != null ? knightDodge.DodgeCount : 0)}");
+
+            Line(ref y, $"[{interruptKey}] interrumpir   [{hitInterruptsKey}] golpe a la bardo (interrumpe)   [{hitNoInterruptKey}] (no interrumpe)");
+            Line(ref y, $"[{hitKnightKey}] golpe al caballero (prueba de esquiva)");
+
+            // Aviso grande en el centro, también en rojo con contorno negro.
             if (Time.time < messageUntil)
             {
                 string text = messageIsRepeat ? "¡CONTADOR REINICIADO!" : "¡CANCIÓN INTERRUMPIDA!";
-                DrawBanner(new Rect(0f, Screen.height * 0.18f, Screen.width, 64f), text);
+                GuiText.DrawOutlined(new Rect(0f, Screen.height * 0.18f, Screen.width, 64f), text, 36, TextColor, OutlineColor, 2f);
             }
         }
 
-        private static void DrawBanner(Rect area, string text)
+        /// <summary>Una línea de texto a la izquierda: rojo con contorno negro, legible sobre un suelo blanco o uno oscuro.</summary>
+        private static void Line(ref float y, string text)
         {
-            var style = new GUIStyle(GUI.skin.label) { fontSize = 36, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
-
-            // Fondo oscuro semitransparente detrás del texto.
-            float width = Mathf.Min(area.width, style.CalcSize(new GUIContent(text)).x + 60f);
-            Rect panel = new Rect(area.x + (area.width - width) * 0.5f, area.y, width, area.height);
-            Color previous = GUI.color;
-            GUI.color = new Color(0f, 0f, 0f, 0.6f);
-            GUI.DrawTexture(panel, Texture2D.whiteTexture);
-            GUI.color = previous;
-
-            // Contorno negro (ocho desplazamientos) y texto blanco encima.
-            style.normal.textColor = Color.black;
-            for (int dx = -2; dx <= 2; dx += 2)
-                for (int dy = -2; dy <= 2; dy += 2)
-                    if (dx != 0 || dy != 0)
-                        GUI.Label(new Rect(area.x + dx, area.y + dy, area.width, area.height), text, style);
-            style.normal.textColor = Color.white;
-            GUI.Label(area, text, style);
-        }
-
-        private static void Draw(Rect box, string text, Color color)
-        {
-            GUI.Box(box, GUIContent.none);
-            Color previous = GUI.color;
-            GUI.color = color;
-            GUI.DrawTexture(new Rect(box.x, box.y, 5f, box.height), Texture2D.whiteTexture);
-            GUI.color = previous;
-            GUI.Label(new Rect(box.x + 10f, box.y + 2f, box.width, box.height), text);
+            const float height = 22f;
+            GuiText.DrawOutlined(new Rect(16f, y, Screen.width - 32f, height), text, 15, TextColor, OutlineColor, 1f, TextAnchor.MiddleLeft);
+            y += height;
         }
     }
 }

@@ -65,7 +65,8 @@ prueba de combate** solo sirve la primera vez; con el Knight ya como prefab solo
 | Canción interrumpida (sonido, aviso), también golpes repetidos | `SongBuff.OnInterrupted(bool reiniciado)`; `SongInterruptFeedback` ya hace parpadear a la bardo y acepta un clip de audio |
 | Recargas de habilidades (HUD) | `AbilityCaster.CooldownRemaining(slot)`, `CooldownNormalized(slot)`, eventos `Cast`, `CooldownStarted`, `CooldownFinished` |
 | Golpes del héroe a enemigos | `PlayerCombat.EnemyHit` |
-| Caballero potenciado | `BuffReceiver.IsBuffed`, `BuffChanged` |
+| Caballero potenciado | `BuffReceiver.IsBuffed`, `BuffChanged`; los valores (daño, área de habilidades, esquiva) viven en el asset `ScriptableObjects/Buffs/PotenciacionDeCancion.asset` |
+| Esquiva automática | `KnightAutoDodge.Dodged`, `DodgeCount` (es un `IDamageFilter` del Knight; el aviso lo da `DodgeFeedback`) |
 
 ## 5. Reiniciar el nivel sin recargar la escena
 
