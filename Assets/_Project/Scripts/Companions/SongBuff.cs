@@ -22,8 +22,9 @@ namespace TheLastBeat.Companions
     /// BuffReceiver de los aliados dentro del radio, y se lo quita cuando salen de él o cuando la canción se corta.
     ///
     /// Estados: Singing, Interrupted y Recovering. Interrupt() corta la canción: pasa a Interrupted
-    /// (interruptedDuration), luego a Recovering (recoveryDuration) y vuelve a cantar. El enlace con el daño recibido
-    /// (Health.Damaged con DamageInfo.Interrupts) es la tarea 18. Audio, VFX e interfaz escuchan OnSongStateChanged.
+    /// (interruptedDuration), luego a Recovering (recoveryDuration) y vuelve a cantar. Un golpe con
+    /// DamageInfo.Interrupts a la bardo la interrumpe (tarea 18); si ya estaba interrumpida o recuperándose, el golpe
+    /// reinicia el contador. Audio, VFX e interfaz escuchan OnSongStateChanged y OnInterrupted.
     /// </summary>
     public class SongBuff : MonoBehaviour
     {
@@ -72,6 +73,13 @@ namespace TheLastBeat.Companions
         /// <summary>Se lanza cada vez que cambia el estado de la canción (audio, VFX e interfaz).</summary>
         public event Action<SongState> OnSongStateChanged;
 
+        /// <summary>
+        /// Se lanza con cada golpe que interrumpe la canción, también los que llegan con ella ya cortada.
+        /// El parámetro es true si el golpe reinició un contador en lugar de cortar una canción que sonaba.
+        /// Es lo que debe usar el audio y el VFX de "canción interrumpida", porque un golpe repetido no cambia de estado.
+        /// </summary>
+        public event Action<bool> OnInterrupted;
+
         private void Awake()
         {
             health = GetComponent<Health>();
@@ -80,7 +88,12 @@ namespace TheLastBeat.Companions
 
         private void OnEnable()
         {
-            if (health != null) health.Died += OnBardDied;
+            if (health != null)
+            {
+                health.Damaged += OnBardDamaged;
+                health.Died += OnBardDied;
+            }
+
             if (started) return;
 
             started = true;
@@ -90,7 +103,12 @@ namespace TheLastBeat.Companions
 
         private void OnDisable()
         {
-            if (health != null) health.Died -= OnBardDied;
+            if (health != null)
+            {
+                health.Damaged -= OnBardDamaged;
+                health.Died -= OnBardDied;
+            }
+
             ClearAll();
         }
 
@@ -123,14 +141,36 @@ namespace TheLastBeat.Companions
 
         /// <summary>
         /// Corta la canción: el grupo pierde el efecto al instante y ella tarda interruptedDuration + recoveryDuration
-        /// en volver a cantar. No hace nada si ya está interrumpida o recuperándose.
+        /// en volver a cantar. Si ya estaba cortada, reinicia el contador del estado en que esté (Interrupted o Recovering),
+        /// así que seguir golpeándola la mantiene sin cantar.
         /// </summary>
         public void Interrupt()
         {
-            if (State != SongState.Singing) return;
-            ClearAll();
-            stateEndsAt = Time.time + interruptedDuration;
-            SetState(SongState.Interrupted);
+            float now = Time.time;
+            switch (State)
+            {
+                case SongState.Singing:
+                    ClearAll();
+                    stateEndsAt = now + interruptedDuration;
+                    SetState(SongState.Interrupted);
+                    OnInterrupted?.Invoke(false);
+                    break;
+                case SongState.Interrupted:
+                    stateEndsAt = now + interruptedDuration;
+                    OnInterrupted?.Invoke(true);
+                    break;
+                case SongState.Recovering:
+                    stateEndsAt = now + recoveryDuration;
+                    OnInterrupted?.Invoke(true);
+                    break;
+            }
+        }
+
+        private void OnBardDamaged(Health source, DamageInfo info)
+        {
+            // Solo los golpes que interrumpen (DamageInfo.Interrupts); veneno o quemadura no la cortan.
+            if (!info.Interrupts || source.IsDead) return;
+            Interrupt();
         }
 
         /// <summary>Vuelve a activar la canción y empieza a cantar (la bardo revive en un reinicio del nivel).</summary>

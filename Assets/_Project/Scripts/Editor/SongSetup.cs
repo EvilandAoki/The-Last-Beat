@@ -47,6 +47,36 @@ namespace TheLastBeat.EditorTools
             Debug.Log("[SongSetup] Listo. La bardo canta en Test_Combo. Tecla I = interrumpir la canción (prueba).");
         }
 
+        [MenuItem("The Last Beat/Bardo/Añadir feedback de interrupción (tarea 18)")]
+        public static void AddInterruptFeedback()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                Debug.LogError("[SongSetup] Sal de Play antes de ejecutar esto.");
+                return;
+            }
+
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(BardPrefab) == null)
+            {
+                Debug.LogError("[SongSetup] Falta Bardo.prefab.");
+                return;
+            }
+
+            EditPrefab(BardPrefab, root =>
+            {
+                if (root.GetComponent<SongBuff>() == null)
+                {
+                    Debug.LogError("[SongSetup] La bardo no tiene SongBuff. Ejecuta antes 'Añadir canción (tarea 17)'.");
+                    return;
+                }
+
+                if (root.GetComponent<SongInterruptFeedback>() == null) root.AddComponent<SongInterruptFeedback>();
+            });
+
+            AssetDatabase.SaveAssets();
+            Debug.Log("[SongSetup] Listo. Prueba en Test_Combo: O = golpe a la bardo que interrumpe, P = golpe que no interrumpe.");
+        }
+
         private static void EditPrefab(string path, System.Action<GameObject> edit)
         {
             GameObject root = PrefabUtility.LoadPrefabContents(path);
