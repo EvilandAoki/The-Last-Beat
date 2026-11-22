@@ -34,6 +34,7 @@ namespace TheLastBeat.EditorTools
             ("Armature|Idle", "Idle", true, -1, 60),
             ("Armature|Run", "Run", true, -1, 20),
             ("Armature|Spin", "Spin", true, -1, 20),
+            ("Armature|Charge", "Charge", true, -1, 16),
             ("Armature|Light1", "Light1", false, 9, 22),
             ("Armature|Light2", "Light2", false, 9, 22),
             ("Armature|Heavy1", "Heavy1", false, 16, 34),
@@ -183,6 +184,7 @@ namespace TheLastBeat.EditorTools
 
             // Spin (giro con explosión): lo lanza AbilityCaster con CrossFade y la propia habilidad decide cuándo salir.
             Add("Spin", clips["Spin"], new Vector3(520, -120, 0));
+            Add("Charge", clips["Charge"], new Vector3(780, -120, 0));
 
             // Los golpes los lanza PlayerCombat (CrossFade) y encadena el combo en código.
             // Aquí solo hace falta que cada golpe vuelva a Idle cuando termina sin que lo continúen.

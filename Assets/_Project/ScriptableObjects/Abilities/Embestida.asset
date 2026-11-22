@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3136f4a3fcf0070cc8b215f70063338d, type: 3}
+  m_Name: Embestida
+  m_EditorClassIdentifier: Assembly-CSharp::TheLastBeat.Abilities.ChargeAbilityData
+  displayName: Embestida
+  description: "Carga corta hacia delante que golpea todo lo que hay en la l\xEDnea."
+  icon: {fileID: 0}
+  cooldown: 8
+  damage: 30
+  radius: 1.1
+  knockback: 7
+  animatorState: Charge
+  endAnimatorState: Idle
+  upgrades:
+  - title: "M\xE1s da\xF1o"
+    description: "+25 % de da\xF1o."
+    damageMultiplier: 1.25
+    cooldownMultiplier: 1
+    radiusMultiplier: 1
+  - title: "L\xEDnea m\xE1s ancha"
+    description: +25 % de ancho de golpe.
+    damageMultiplier: 1
+    cooldownMultiplier: 1
+    radiusMultiplier: 1.25
+  - title: "Recarga r\xE1pida"
+    description: -20 % de recarga.
+    damageMultiplier: 1
+    cooldownMultiplier: 0.8
+    radiusMultiplier: 1
+  distance: 7
+  chargeDuration: 0.35
+  windup: 0.1
+  recovery: 0.25
+  halfHeight: 1
