@@ -13,7 +13,7 @@ namespace TheLastBeat.EditorTools
     /// </summary>
     public static class KnightPrefabTool
     {
-        public const string PrefabPath = "Assets/_Project/Prefabs/Knight.prefab";
+        public const string PrefabPath = "Assets/_Project/Prefabs/Heroes/Knight.prefab";
 
         [MenuItem("The Last Beat/Hero/1. Guardar el Knight de la escena como prefab")]
         public static void SaveAsPrefab()

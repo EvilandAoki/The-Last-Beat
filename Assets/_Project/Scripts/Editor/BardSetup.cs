@@ -14,7 +14,7 @@ namespace TheLastBeat.EditorTools
     /// </summary>
     public static class BardSetup
     {
-        private const string PrefabPath = "Assets/_Project/Prefabs/Bardo.prefab";
+        private const string PrefabPath = "Assets/_Project/Prefabs/Heroes/Bardo.prefab";
         private const string MaterialPath = "Assets/_Project/Art/Models/Bard/BardoProvisional.mat";
         private const string TestScenePath = "Assets/_Project/Scenes/Test_Combo.unity";
 
