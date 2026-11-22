@@ -71,6 +71,17 @@ namespace TheLastBeat.Companions
         /// <summary>Tiempo total desde que se interrumpe hasta que vuelve a cantar. Útil para rellenar una barra.</summary>
         public float TotalDowntime => interruptedDuration + recoveryDuration;
 
+        /// <summary>
+        /// Segundos que faltan hasta que vuelva a cantar, sumando lo que queda de Interrupted y toda la recuperación (0 si canta).
+        /// Dividido entre TotalDowntime da el progreso para un temporizador en pantalla.
+        /// </summary>
+        public float DowntimeRemaining => State switch
+        {
+            SongState.Singing => 0f,
+            SongState.Interrupted => Mathf.Max(0f, stateEndsAt - Time.time) + recoveryDuration,
+            _ => Mathf.Max(0f, stateEndsAt - Time.time),
+        };
+
         /// <summary>Se lanza cada vez que cambia el estado de la canción (audio, VFX e interfaz).</summary>
         public event Action<SongState> OnSongStateChanged;
 
