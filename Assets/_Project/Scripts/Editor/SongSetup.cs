@@ -13,7 +13,7 @@ namespace TheLastBeat.EditorTools
     /// </summary>
     public static class SongSetup
     {
-        private const string BardPrefab = "Assets/_Project/Prefabs/Bardo.prefab";
+        private const string BardPrefab = "Assets/_Project/Prefabs/Heroes/Bardo.prefab";
         private const string TestScenePath = "Assets/_Project/Scenes/Test_Combo.unity";
 
         [MenuItem("The Last Beat/Bardo/Añadir canción (tarea 17)")]

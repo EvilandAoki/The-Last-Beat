@@ -221,6 +221,30 @@ namespace TheLastBeat.Companions
                 WarpNearLeader();
         }
 
+        /// <summary>
+        /// Reinicio del nivel sin recargar la escena (tarea 35): la bardo vuelve a la vida en una posición,
+        /// con la vida llena y cantando.
+        /// </summary>
+        public void Revive(Vector3 position)
+        {
+            health.ResetHealth();
+            agent.enabled = true;
+            if (NavMesh.SamplePosition(position, out NavMeshHit hit, 4f, NavMesh.AllAreas)) position = hit.position;
+            transform.position = position;
+            if (agent.isOnNavMesh)
+            {
+                agent.Warp(position);
+                agent.isStopped = false;
+                agent.ResetPath();
+            }
+
+            stuckTimer = 0f;
+            nextRepath = 0f;
+            State = CompanionState.Following;
+            StateChanged?.Invoke(State);
+            GetComponent<SongBuff>()?.ResetSong();
+        }
+
         // ---------------------------------------------------------------- Estado y muerte
 
         private void SetState(CompanionState next)

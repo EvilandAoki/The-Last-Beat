@@ -59,6 +59,15 @@ namespace TheLastBeat.EditorTools
             if (!SetupModel()) return;
             AnimatorController controller = SetupController();
             if (controller == null) return;
+
+            // Con el Knight ya convertido en prefab, rehacer la escena destruiría componentes del prefab y fallaría.
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(KnightPrefabTool.PrefabPath) != null)
+            {
+                Debug.LogWarning("[HeroTestSetup] El Knight ya es un prefab: solo se reconfiguraron Hero.fbx y Hero.controller. " +
+                                 "Para habilidades, bardo y canción usa los menús The Last Beat > Habilidades / Bardo.");
+                return;
+            }
+
             SetupScene(controller);
             Debug.Log("[HeroTestSetup] Listo. Abre Test_Combo, dale Play y ataca con J (débil) y K (fuerte).");
         }

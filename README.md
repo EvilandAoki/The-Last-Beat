@@ -27,11 +27,26 @@ Escena principal: `Assets/_Project/Scenes/Pueblo.unity`.
 
 ```
 Assets/_Project/
-  Scripts/{Combat,Core,Player,Debug,Editor}   código (namespace TheLastBeat.*)
-  Scenes/  Prefabs/  ScriptableObjects/
+  Scripts/
+    Core/        capas (GameLayers), IRespawnable
+    Combat/      Health, DamageInfo, KnockbackReceiver
+    Player/      PlayerController, PlayerCombat, PlayerInputReader
+    Abilities/   AbilityData y las habilidades del caballero
+    Companions/  BardCompanion (IA) y SongBuff (canción)
+    Buffs/       BuffReceiver
+    Debug/       herramientas de prueba (TheLastBeat.DebugTools)
+    Editor/      menús de configuración (The Last Beat > ...)
+  Scenes/        Pueblo.unity (la principal) y Test_Combo.unity (pruebas); cada escena con su NavMesh
+  Prefabs/       Heroes/ (Knight, Bardo)  Enemies/ (para los demonios)
+  ScriptableObjects/  Abilities/ (y Waves/ para las hordas)
   Art/{Models,ConceptArt}   Audio/{Music,SFX}   VFX/   Input/
-Tools/Planeacion/            scripts que crean issues, hitos y tablero en GitHub
+Tools/Blender/     genera el héroe provisional (build_hero.py)
+Tools/Planeacion/  scripts que crean issues, hitos y tablero en GitHub
+docs/              guías del equipo
 ```
+
+Convención: una carpeta por área dentro de `Scripts/` y el namespace `TheLastBeat.<Área>`.
+Para integrar enemigos, héroes y escenas, mira [docs/INTEGRACION.md](docs/INTEGRACION.md).
 
 ## Capas físicas
 

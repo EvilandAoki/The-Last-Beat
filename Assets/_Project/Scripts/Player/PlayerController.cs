@@ -1,3 +1,4 @@
+using TheLastBeat.Combat;
 using TheLastBeat.Core;
 using UnityEngine;
 
@@ -99,6 +100,32 @@ namespace TheLastBeat.Player
 
         /// <summary>Detiene en seco la inercia (al terminar una embestida, al morir).</summary>
         public void StopImmediately() => horizontalVelocity = Vector3.zero;
+
+        /// <summary>
+        /// Reinicio del héroe sin recargar la escena (tarea 35): lo coloca, le devuelve la vida y limpia su estado
+        /// (movimiento, golpes, habilidades, recargas) llamando a todos los IRespawnable que tenga.
+        /// </summary>
+        public void Respawn(Vector3 position, Quaternion rotation)
+        {
+            controller.enabled = false;
+            transform.SetPositionAndRotation(position, rotation);
+            controller.enabled = true;
+
+            horizontalVelocity = Vector3.zero;
+            verticalVelocity = 0f;
+            moveLocks = 0;
+            SpeedMultiplier = 1f;
+
+            var health = GetComponent<Health>();
+            if (health != null) health.ResetHealth();
+            foreach (IRespawnable respawnable in GetComponents<IRespawnable>()) respawnable.ResetForRestart();
+
+            if (animator != null)
+            {
+                animator.Rebind();
+                animator.Update(0f);
+            }
+        }
 
         private Vector3 CameraRelative(Vector2 move)
         {
