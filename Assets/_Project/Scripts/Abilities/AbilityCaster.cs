@@ -49,11 +49,13 @@ namespace TheLastBeat.Abilities
         private PlayerCombat combat;
         private readonly Collider[] overlaps = new Collider[32];
         private readonly HashSet<IDamageable> damaged = new HashSet<IDamageable>();
+        private readonly HashSet<IDamageable> sessionHits = new HashSet<IDamageable>();
         private Coroutine routine;
         private AbilityContext current;
         private int locksHeld;
 
         public PlayerController Controller => controller;
+        public LayerMask HitMask => hitMask;
         public Animator Animator => animator;
         public bool IsCasting { get; private set; }
 
@@ -186,6 +188,7 @@ namespace TheLastBeat.Abilities
             PlayAnimation(context.Data.animatorState);
             IEnumerator cast = context.Data.Cast(context);
             while (cast.MoveNext()) yield return cast.Current;
+            PlayAnimation(context.Data.endAnimatorState);
             Finish();
         }
 
@@ -262,6 +265,44 @@ namespace TheLastBeat.Abilities
                 DamageInfo info = DamageInfo.Create(damage, gameObject, team,
                     overlaps[i].ClosestPoint(center), direction, knockback, true, heavy);
                 if (target.TakeDamage(info)) hits++;
+            }
+
+            return hits;
+        }
+
+        /// <summary>
+        /// Conjunto reutilizable para recordar a quién ya se golpeó durante UNA habilidad (por ejemplo una carga que
+        /// golpea en varios frames). Se vacía cada vez que se pide; solo hay uno a la vez porque solo se lanza una habilidad a la vez.
+        /// </summary>
+        public HashSet<IDamageable> NewHitSession()
+        {
+            sessionHits.Clear();
+            return sessionHits;
+        }
+
+        /// <summary>
+        /// Daña a los enemigos dentro de una caja orientada, salvo los que ya estén en alreadyHit (a los que golpea se
+        /// añaden). Sirve para golpear a lo largo de un recorrido sin dañar dos veces al mismo enemigo. Devuelve cuántos golpeó ahora.
+        /// </summary>
+        public int HitBox(Vector3 center, Vector3 halfExtents, Quaternion rotation, float damage, float knockback,
+            bool heavy, HashSet<IDamageable> alreadyHit)
+        {
+            int count = Physics.OverlapBoxNonAlloc(center, halfExtents, overlaps, rotation, hitMask, QueryTriggerInteraction.Ignore);
+            int hits = 0;
+            for (int i = 0; i < count; i++)
+            {
+                IDamageable target = overlaps[i].GetComponentInParent<IDamageable>();
+                if (target == null || target.IsDead || alreadyHit.Contains(target)) continue;
+
+                Vector3 direction = target.Transform.position - transform.position;
+                direction.y = 0f;
+                DamageInfo info = DamageInfo.Create(damage, gameObject, team,
+                    overlaps[i].ClosestPoint(center), direction, knockback, true, heavy);
+                if (target.TakeDamage(info))
+                {
+                    alreadyHit.Add(target);
+                    hits++;
+                }
             }
 
             return hits;

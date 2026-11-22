@@ -1,6 +1,6 @@
 """
 Héroe provisional de The Last Beat: esqueleto Humanoid (nombres mixamorig:*), malla low-poly
-con pesos rígidos y clips Idle, Run, Spin (bucle; Unity gira el modelo), Light1, Light2, Heavy1 y Heavy2. Exporta un FBX listo para Unity.
+con pesos rígidos y clips Idle, Run, Spin (bucle; Unity gira el modelo), Charge (bucle; Unity desplaza al héroe), Light1, Light2, Heavy1 y Heavy2. Exporta un FBX listo para Unity.
 
 Uso:
   snap run blender -b -P Tools/Blender/build_hero.py -- <salida.fbx> [--preview <carpeta>]
@@ -19,7 +19,7 @@ from mathutils import Euler, Matrix, Vector
 
 FPS = 30
 HIT_FRAMES = {"Light1": 9, "Light2": 9, "Heavy1": 16, "Heavy2": 17}
-CLIP_FRAMES = {"Idle": 60, "Run": 20, "Spin": 20, "Light1": 22, "Light2": 22, "Heavy1": 34, "Heavy2": 38}
+CLIP_FRAMES = {"Idle": 60, "Run": 20, "Spin": 20, "Charge": 16, "Light1": 22, "Light2": 22, "Heavy1": 34, "Heavy2": 38}
 
 # ----------------------------------------------------------------------------------------------
 # Esqueleto
@@ -452,6 +452,29 @@ def crear_clips(arm):
 
     clip(arm, "Spin", [(0, spin(0)), (5, spin(1)), (10, spin(0)), (15, spin(-1)), (20, spin(0))])
 
+    # --- Charge (16 f, en bucle): carrera inclinada con el espadón al frente; Unity desplaza al héroe.
+    def carga(pierna_izq_adelante, bote):
+        a = 1 if pierna_izq_adelante else -1
+        p = {
+            "LeftUpLeg": [("X", -48 * a)], "RightUpLeg": [("X", 48 * a)],
+            "LeftLeg": [("X", 10 + (62 if a < 0 else 8))], "RightLeg": [("X", 10 + (62 if a > 0 else 8))],
+            "LeftFoot": [("X", -12 * a)], "RightFoot": [("X", 12 * a)],
+            "LeftArm": [("Y", 55), ("X", 45 * a)], "LeftForeArm": [("Z", -70)],
+            "RightArm": [("Y", -8), ("Z", 108)], "RightForeArm": [("Z", 14)],
+            "RightHand": [("Y", 20)],
+        }
+        p.update(torso(giro=-4 * a, inclina=28))
+        p["Hips.loc"] = (0, 0, bote)
+        return p
+
+    clip(arm, "Charge", [
+        (0, carga(True, -0.03)),
+        (4, _paso(carga(True, 0.04), carga(False, 0.04), 0.5)),
+        (8, carga(False, -0.03)),
+        (12, _paso(carga(False, 0.04), carga(True, 0.04), 0.5)),
+        (16, carga(True, -0.03)),
+    ], suelo=False)
+
     # --- Light1 (22 f, impacto en 9): tajo horizontal de derecha a izquierda, avanza el pie izquierdo
     clip(arm, "Light1", [
         (0, reposo),
@@ -569,6 +592,7 @@ def vista_previa(arm, carpeta):
         "Idle": [0, 30],
         "Run": [0, 5, 10, 15],
         "Spin": [0, 5, 15],
+        "Charge": [0, 4, 8],
         "Light1": [0, 6, 9, 13],
         "Light2": [0, 6, 9, 13],
         "Heavy1": [0, 12, 16, 20],

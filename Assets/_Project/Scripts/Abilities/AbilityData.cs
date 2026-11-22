@@ -42,6 +42,8 @@ namespace TheLastBeat.Abilities
         [Header("Animación (opcional)")]
         [Tooltip("Estado del Animator que se reproduce al lanzarla. Vacío = ninguno.")]
         public string animatorState;
+        [Tooltip("Estado del Animator al terminar la habilidad (por ejemplo Idle). Vacío = no cambia.")]
+        public string endAnimatorState;
 
         [Header("Mejoras (hasta 8)")]
         public AbilityUpgrade[] upgrades = new AbilityUpgrade[0];

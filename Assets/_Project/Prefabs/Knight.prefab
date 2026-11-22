@@ -199,7 +199,7 @@ MonoBehaviour:
   animator: {fileID: 4695428823845782544}
   idleState: Idle
   slots:
-  - ability: {fileID: 11400000, guid: cb6494d17955c03398d559faa665a89c, type: 2}
+  - ability: {fileID: 11400000, guid: 12a7f0b1caf853c54ad58df8954a6e4b, type: 2}
     level: 1
   - ability: {fileID: 11400000, guid: b6ae9229005b542b187c17cb9962869f, type: 2}
     level: 1

@@ -19,6 +19,7 @@ namespace TheLastBeat.EditorTools
         private const string SlamPath = Folder + "/GolpeDeSuelo.asset";
         private const string SpinPath = Folder + "/OndaGiratoria.asset";
         private const string SpinWithBlastPath = Folder + "/GiroConExplosion.asset";
+        private const string ChargePath = Folder + "/Embestida.asset";
         private const string TestScenePath = "Assets/_Project/Scenes/Test_Combo.unity";
 
         [MenuItem("The Last Beat/Habilidades/Crear habilidades de prueba y asignarlas al Knight")]
@@ -80,6 +81,97 @@ namespace TheLastBeat.EditorTools
             init(asset);
             AssetDatabase.CreateAsset(asset, path);
             return asset;
+        }
+
+        [MenuItem("The Last Beat/Habilidades/Configurar Embestida (tarea 11)")]
+        public static void SetupCharge()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                Debug.LogError("[AbilitySetup] Sal de Play antes de ejecutar esto.");
+                return;
+            }
+
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(KnightPrefabTool.PrefabPath) == null)
+            {
+                Debug.LogError($"[AbilitySetup] No existe {KnightPrefabTool.PrefabPath}.");
+                return;
+            }
+
+            // 1. Clip Charge en Hero.fbx y su estado en Hero.controller (sin tocar escenas ni prefabs).
+            if (HeroTestSetup.ConfigureModelAndController() == null) return;
+
+            // 2. El asset de la habilidad (si ya existe no se pisa: tus ajustes se conservan).
+            Directory.CreateDirectory(Folder);
+            ChargeAbilityData charge = LoadOrCreate<ChargeAbilityData>(ChargePath, a =>
+            {
+                a.displayName = "Embestida";
+                a.description = "Carga corta hacia delante que golpea todo lo que hay en la línea.";
+                a.cooldown = 8f; a.damage = 30f; a.radius = 1.1f; a.knockback = 7f;
+                a.animatorState = "Charge";
+                a.endAnimatorState = "Idle";
+                a.upgrades = new[]
+                {
+                    new AbilityUpgrade { title = "Más daño", description = "+25 % de daño.", damageMultiplier = 1.25f },
+                    new AbilityUpgrade { title = "Línea más ancha", description = "+25 % de ancho de golpe.", radiusMultiplier = 1.25f },
+                    new AbilityUpgrade { title = "Recarga rápida", description = "-20 % de recarga.", cooldownMultiplier = 0.8f },
+                };
+            });
+
+            // 3. En la ranura 1 (Q) del prefab del Knight, sustituyendo al Golpe de suelo de prueba.
+            AssignToSlot(0, charge, "GolpeDeSuelo");
+            AddTestWall();
+            AssetDatabase.SaveAssets();
+            Debug.Log("[AbilitySetup] Listo. En Test_Combo: Q = Embestida. Ajusta los valores en " + ChargePath + ".");
+        }
+
+        /// <summary>Pared de prueba en Test_Combo (capa Ground), delante del Knight, para comprobar que la carga no la atraviesa.</summary>
+        private static void AddTestWall()
+        {
+            if (EditorSceneManager.GetActiveScene().path != TestScenePath)
+            {
+                if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+                EditorSceneManager.OpenScene(TestScenePath, OpenSceneMode.Single);
+            }
+
+            GameObject knight = GameObject.Find("Knight");
+            var scene = EditorSceneManager.GetActiveScene();
+            if (knight != null && GameObject.Find("Pared_Prueba") == null)
+            {
+                GameObject wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                wall.name = "Pared_Prueba";
+                wall.layer = LayerMask.NameToLayer("Ground");
+                wall.transform.position = knight.transform.position + new Vector3(0f, 1.5f, 10f);
+                wall.transform.localScale = new Vector3(8f, 3f, 0.6f);
+            }
+
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+        }
+
+        private static void AssignToSlot(int slotIndex, AbilityData ability, string replaceableName)
+        {
+            GameObject root = PrefabUtility.LoadPrefabContents(KnightPrefabTool.PrefabPath);
+            try
+            {
+                var caster = root.GetComponent<AbilityCaster>();
+                if (caster == null)
+                {
+                    Debug.LogError("[AbilitySetup] El prefab del Knight no tiene AbilityCaster. Ejecuta primero 'Crear habilidades de prueba'.");
+                    return;
+                }
+
+                var serialized = new SerializedObject(caster);
+                SerializedProperty slot = serialized.FindProperty("slots").GetArrayElementAtIndex(slotIndex).FindPropertyRelative("ability");
+                var current = slot.objectReferenceValue as AbilityData;
+                if (current == null || current.name == replaceableName) slot.objectReferenceValue = ability;
+                serialized.ApplyModifiedProperties();
+                PrefabUtility.SaveAsPrefabAsset(root, KnightPrefabTool.PrefabPath);
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
         }
 
         [MenuItem("The Last Beat/Habilidades/Configurar Giro con explosión (tarea 10)")]
