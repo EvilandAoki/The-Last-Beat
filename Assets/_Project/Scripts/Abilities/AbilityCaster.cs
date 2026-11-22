@@ -5,6 +5,7 @@ using TheLastBeat.Buffs;
 using TheLastBeat.Combat;
 using TheLastBeat.Core;
 using TheLastBeat.Player;
+using TheLastBeat.VFX;
 using UnityEngine;
 
 namespace TheLastBeat.Abilities
@@ -280,7 +281,11 @@ namespace TheLastBeat.Abilities
                 direction.y = 0f;
                 DamageInfo info = DamageInfo.Create(damage, gameObject, team,
                     overlaps[i].ClosestPoint(center), direction, knockback, true, heavy);
-                if (target.TakeDamage(info)) hits++;
+                if (target.TakeDamage(info))
+                {
+                    hits++;
+                    Vfx.Play(heavy ? VfxKind.ImpactHeavy : VfxKind.Impact, info.HitPoint);
+                }
             }
 
             return hits;
@@ -318,6 +323,7 @@ namespace TheLastBeat.Abilities
                 {
                     alreadyHit.Add(target);
                     hits++;
+                    Vfx.Play(heavy ? VfxKind.ImpactHeavy : VfxKind.Impact, info.HitPoint);
                 }
             }
 

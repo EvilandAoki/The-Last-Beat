@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TheLastBeat.Buffs;
 using TheLastBeat.Combat;
 using TheLastBeat.Core;
+using TheLastBeat.VFX;
 using UnityEngine;
 
 namespace TheLastBeat.Companions
@@ -55,6 +56,7 @@ namespace TheLastBeat.Companions
         private readonly List<BuffReceiver> leaving = new List<BuffReceiver>();
         private float stateEndsAt;
         private float nextScan;
+        private PooledEffect aura;
         private bool started;
 
         public SongState State { get; private set; } = SongState.Recovering;
@@ -125,6 +127,7 @@ namespace TheLastBeat.Companions
             }
 
             ClearAll();
+            Vfx.Stop(ref aura);
         }
 
         private void Update()
@@ -168,17 +171,23 @@ namespace TheLastBeat.Companions
                     ClearAll();
                     stateEndsAt = now + interruptedDuration;
                     SetState(SongState.Interrupted);
-                    OnInterrupted?.Invoke(false);
+                    NotifyInterrupted(false);
                     break;
                 case SongState.Interrupted:
                     stateEndsAt = now + interruptedDuration;
-                    OnInterrupted?.Invoke(true);
+                    NotifyInterrupted(true);
                     break;
                 case SongState.Recovering:
                     stateEndsAt = now + recoveryDuration;
-                    OnInterrupted?.Invoke(true);
+                    NotifyInterrupted(true);
                     break;
             }
+        }
+
+        private void NotifyInterrupted(bool restarted)
+        {
+            Vfx.Play(VfxKind.SongBreak, transform.position + Vector3.up);
+            OnInterrupted?.Invoke(restarted);
         }
 
         private void OnBardDamaged(Health source, DamageInfo info)
@@ -207,6 +216,17 @@ namespace TheLastBeat.Companions
         {
             if (State == next) return;
             State = next;
+
+            // El aura morada marca el radio mientras canta y desaparece cuando se corta.
+            if (next == SongState.Singing)
+            {
+                if (aura == null) aura = Vfx.Follow(VfxKind.SongAura, transform, new Vector3(0f, 0.05f, 0f), radius);
+            }
+            else
+            {
+                Vfx.Stop(ref aura);
+            }
+
             OnSongStateChanged?.Invoke(next);
         }
 

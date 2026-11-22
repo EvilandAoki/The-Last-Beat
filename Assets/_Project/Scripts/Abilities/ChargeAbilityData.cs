@@ -1,4 +1,5 @@
 using System.Collections;
+using TheLastBeat.VFX;
 using UnityEngine;
 
 namespace TheLastBeat.Abilities
@@ -57,6 +58,10 @@ namespace TheLastBeat.Abilities
                     distance + character.skinWidth, TheLastBeat.Core.GameLayers.ObstacleMask, QueryTriggerInteraction.Ignore))
                 planned = Mathf.Max(0f, wall.distance - character.skinWidth);
 
+            // Estela de luz mientras dura la carga (se detiene al terminar o si se cancela).
+            PooledEffect trail = Vfx.Follow(VfxKind.Charge, body, new Vector3(0f, 0.15f, 0f));
+            context.RegisterCleanup(() => Vfx.Stop(ref trail));
+
             var alreadyHit = caster.NewHitSession();
             float speed = distance / chargeDuration;
             float traveled = 0f;
@@ -89,6 +94,7 @@ namespace TheLastBeat.Abilities
                 yield return null;
             }
 
+            Vfx.Stop(ref trail);
             if (recovery > 0f) yield return new WaitForSeconds(recovery);
         }
     }
