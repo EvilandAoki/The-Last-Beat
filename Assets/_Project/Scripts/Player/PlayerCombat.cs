@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using TheLastBeat.Abilities;
 using TheLastBeat.Combat;
 using TheLastBeat.Core;
 using UnityEngine;
@@ -91,6 +92,7 @@ namespace TheLastBeat.Player
         [SerializeField] private bool logHits;
 
         private PlayerController controller;
+        private AbilityCaster abilities;
         private readonly Dictionary<string, float> clipLengths = new Dictionary<string, float>();
         private readonly Collider[] overlaps = new Collider[24];
         private readonly HashSet<IDamageable> damaged = new HashSet<IDamageable>();
@@ -119,6 +121,7 @@ namespace TheLastBeat.Player
         private void Awake()
         {
             controller = GetComponent<PlayerController>();
+            abilities = GetComponent<AbilityCaster>();
             if (input == null) input = GetComponent<PlayerInputReader>();
             if (animator == null) animator = GetComponentInChildren<Animator>();
             if (hitMask.value == 0) hitMask = GameLayers.EnemyMask;
@@ -154,6 +157,8 @@ namespace TheLastBeat.Player
 
         private void Buffer(AttackKind kind)
         {
+            // Mientras se lanza una habilidad no se encadenan ataques.
+            if (abilities != null && abilities.IsCasting) return;
             bufferedKind = kind;
             bufferedUntil = Time.time + inputBuffer;
         }

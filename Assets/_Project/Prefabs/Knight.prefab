@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 6206728610721011721}
   - component: {fileID: 3575029990244318460}
   - component: {fileID: 8563151017582409080}
+  - component: {fileID: 16587274764370855}
   m_Layer: 6
   m_Name: Knight
   m_TagString: Untagged
@@ -182,6 +183,29 @@ MonoBehaviour:
     m_Bits: 0
   team: 1
   logHits: 1
+--- !u!114 &16587274764370855
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1138230949336321400}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e65b9d27be24bd3bb868a376afe979dd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TheLastBeat.Abilities.AbilityCaster
+  input: {fileID: 0}
+  animator: {fileID: 4695428823845782544}
+  slots:
+  - ability: {fileID: 11400000, guid: cb6494d17955c03398d559faa665a89c, type: 2}
+    level: 1
+  - ability: {fileID: 11400000, guid: cb5bc82e3c6359a878488797b01e4d48, type: 2}
+    level: 1
+  hitMask:
+    serializedVersion: 2
+    m_Bits: 0
+  team: 1
 --- !u!1 &2670568548348616413
 GameObject:
   m_ObjectHideFlags: 0
