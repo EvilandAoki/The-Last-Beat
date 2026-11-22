@@ -197,10 +197,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TheLastBeat.Abilities.AbilityCaster
   input: {fileID: 0}
   animator: {fileID: 4695428823845782544}
+  idleState: Idle
   slots:
   - ability: {fileID: 11400000, guid: cb6494d17955c03398d559faa665a89c, type: 2}
     level: 1
-  - ability: {fileID: 11400000, guid: cb5bc82e3c6359a878488797b01e4d48, type: 2}
+  - ability: {fileID: 11400000, guid: b6ae9229005b542b187c17cb9962869f, type: 2}
     level: 1
   hitMask:
     serializedVersion: 2
