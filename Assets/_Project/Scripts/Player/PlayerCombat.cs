@@ -19,7 +19,7 @@ namespace TheLastBeat.Player
     /// El daño se aplica cuando el clip dispara el Animation Event OnHit (ver CombatAnimationEvents).
     /// </summary>
     [RequireComponent(typeof(PlayerController))]
-    public class PlayerCombat : MonoBehaviour
+    public class PlayerCombat : MonoBehaviour, IRespawnable
     {
         public enum AttackKind { Light, Heavy }
 
@@ -150,6 +150,18 @@ namespace TheLastBeat.Player
 
             if (swinging) EndSwing(natural: false);
             pendingStep = -1;
+        }
+
+        /// <summary>Cancela el golpe en curso y olvida el combo (reinicio del nivel).</summary>
+        public void ResetForRestart()
+        {
+            if (swinging) EndSwing(natural: false);
+            pendingStep = -1;
+            lastStep = -1;
+            comboExpiresAt = 0f;
+            bufferedUntil = -1f;
+            readyAt = 0f;
+            currentStep = -1;
         }
 
         private void OnLightPressed() => Buffer(AttackKind.Light);

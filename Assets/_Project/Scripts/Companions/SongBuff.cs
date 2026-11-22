@@ -133,6 +133,15 @@ namespace TheLastBeat.Companions
             SetState(SongState.Interrupted);
         }
 
+        /// <summary>Vuelve a activar la canción y empieza a cantar (la bardo revive en un reinicio del nivel).</summary>
+        public void ResetSong()
+        {
+            ClearAll();
+            enabled = true;
+            nextScan = 0f;
+            SetState(SongState.Singing);
+        }
+
         private void BeginRecovery()
         {
             stateEndsAt = Time.time + recoveryDuration;

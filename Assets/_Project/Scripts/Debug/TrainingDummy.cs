@@ -15,10 +15,6 @@ namespace TheLastBeat.DebugTools
         [SerializeField] private float respawnDelay = 2f;
         [SerializeField] private Color flashColor = Color.white;
         [SerializeField] private float flashTime = 0.1f;
-        [Tooltip("Segundos que dura el empuje de un golpe. 0 = el maniquí no se mueve.")]
-        [SerializeField] private float pushTime = 0.12f;
-        [Tooltip("Cuánto del Knockback del golpe se convierte en metros de empuje.")]
-        [SerializeField] private float pushScale = 0.25f;
 
         private static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
 
@@ -31,6 +27,8 @@ namespace TheLastBeat.DebugTools
         private void Awake()
         {
             health = GetComponent<Health>();
+            // El empuje lo resuelve el componente compartido: así un maniquí se comporta como lo hará un enemigo.
+            if (GetComponent<KnockbackReceiver>() == null) gameObject.AddComponent<KnockbackReceiver>();
             renderers = GetComponentsInChildren<Renderer>();
             block = new MaterialPropertyBlock();
             startScale = transform.localScale;
@@ -54,27 +52,12 @@ namespace TheLastBeat.DebugTools
             Debug.Log($"[{name}] -{info.Amount:0.#}  vida {source.CurrentHealth:0.#}/{source.MaxHealth:0.#}{(info.IsHeavy ? "  (golpe pesado)" : "")}", this);
             StopAllCoroutines();
             StartCoroutine(Flash());
-            if (info.Knockback > 0f && pushTime > 0f)
-                StartCoroutine(Push(info.Direction * (info.Knockback * pushScale)));
         }
 
         private void OnDied(Health source, DamageInfo info)
         {
             Debug.Log($"[{name}] derrotado.", this);
             StartCoroutine(Respawn());
-        }
-
-        private IEnumerator Push(Vector3 delta)
-        {
-            // Empuje simple en el plano: el maniquí no tiene Rigidbody ni IA, solo sirve para ver el efecto.
-            float elapsed = 0f;
-            while (elapsed < pushTime)
-            {
-                float step = Mathf.Min(Time.deltaTime, pushTime - elapsed);
-                transform.position += delta * (step / pushTime);
-                elapsed += step;
-                yield return null;
-            }
         }
 
         private IEnumerator Flash()

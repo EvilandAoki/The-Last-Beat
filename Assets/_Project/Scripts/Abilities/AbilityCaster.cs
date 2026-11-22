@@ -15,7 +15,7 @@ namespace TheLastBeat.Abilities
     /// CooldownStarted y CooldownFinished.
     /// </summary>
     [RequireComponent(typeof(PlayerController))]
-    public class AbilityCaster : MonoBehaviour
+    public class AbilityCaster : MonoBehaviour, IRespawnable
     {
         public const int SlotCount = 2;
 
@@ -108,6 +108,18 @@ namespace TheLastBeat.Abilities
                     slot.onCooldown = false;
                     CooldownFinished?.Invoke(i);
                 }
+            }
+        }
+
+        /// <summary>Cancela la habilidad en curso y deja todas las recargas listas (reinicio del nivel).</summary>
+        public void ResetForRestart()
+        {
+            Abort();
+            for (int i = 0; i < slots.Length; i++)
+            {
+                if (!slots[i].onCooldown) continue;
+                slots[i].onCooldown = false;
+                CooldownFinished?.Invoke(i);
             }
         }
 
