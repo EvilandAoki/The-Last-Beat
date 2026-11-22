@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 838ecb21d3421abfa8cb9d371c56f4f8, type: 3}
+  m_Name: VfxLibrary
+  m_EditorClassIdentifier: Assembly-CSharp::TheLastBeat.VFX.VfxLibrary
+  impact:
+    prefab: {fileID: 7050296405136086050, guid: aad190953220b5c1ab2246901dd5b076, type: 3}
+    prewarm: 12
+  impactHeavy:
+    prefab: {fileID: 371280698007979178, guid: 203f82230b90b496bb24540a7ba1b324, type: 3}
+    prewarm: 6
+  spin:
+    prefab: {fileID: 6484528365902194323, guid: 39adac378216e0d828e7cc47760ba8fc, type: 3}
+    prewarm: 2
+  explosion:
+    prefab: {fileID: 3541093365409086098, guid: 3c090f0f49908cae3a8a930ba219ae21, type: 3}
+    prewarm: 3
+  charge:
+    prefab: {fileID: 706659039518606872, guid: b71abcfe4103a230681646dc025a96ac, type: 3}
+    prewarm: 2
+  songAura:
+    prefab: {fileID: 4777198648566816187, guid: da52602269bee664cb94de731ece8251, type: 3}
+    prewarm: 2
+  songBreak:
+    prefab: {fileID: 8019781532036363466, guid: b44c5a1bbd9dda45e859c12cc6ac1040, type: 3}
+    prewarm: 3

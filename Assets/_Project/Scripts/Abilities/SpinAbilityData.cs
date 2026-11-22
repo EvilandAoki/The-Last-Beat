@@ -1,4 +1,5 @@
 using System.Collections;
+using TheLastBeat.VFX;
 using UnityEngine;
 
 namespace TheLastBeat.Abilities
@@ -38,8 +39,6 @@ namespace TheLastBeat.Abilities
         public string explosionState = "Heavy1";
         [Tooltip("Punto del clip de la explosión (0-1) en el que entra, para llegar directo al golpe.")]
         [Range(0f, 1f)] public float explosionStateOffset = 0.4f;
-        [Tooltip("Efecto visual opcional de la explosión (tarea 33). Se crea en el suelo, bajo el héroe.")]
-        public GameObject explosionEffect;
 
         public override IEnumerator Cast(AbilityContext context)
         {
@@ -48,8 +47,10 @@ namespace TheLastBeat.Abilities
             Quaternion baseRotation = model != null ? model.localRotation : Quaternion.identity;
             if (model != null) context.RegisterCleanup(() => model.localRotation = baseRotation);
 
-            // Giro: el modelo da vueltas y el héroe puede desplazarse despacio.
+            // Giro: el modelo da vueltas y el héroe puede desplazarse despacio. Un anillo de luz gira con él.
             context.SetMovementSpeed(moveSpeedWhileSpinning);
+            PooledEffect spinFx = Vfx.Follow(VfxKind.Spin, context.Transform, Vector3.up, context.Radius);
+            context.RegisterCleanup(() => Vfx.Stop(ref spinFx));
             float elapsed = 0f;
             float nextTick = 0f;
             while (elapsed < spinDuration)
@@ -68,6 +69,7 @@ namespace TheLastBeat.Abilities
             }
 
             // Explosión: se queda quieto, el modelo vuelve al frente y golpea con un área mayor.
+            Vfx.Stop(ref spinFx);
             if (model != null) model.localRotation = baseRotation;
             context.SetMovementSpeed(1f);
             caster.LockMovement();
@@ -77,8 +79,7 @@ namespace TheLastBeat.Abilities
             Vector3 center = Center(context);
             caster.HitArea(center, context.Radius * explosionRadiusMultiplier,
                 context.Damage * explosionDamageMultiplier, explosionKnockback, true);
-            if (explosionEffect != null)
-                Object.Instantiate(explosionEffect, context.Transform.position, Quaternion.identity);
+            Vfx.Play(VfxKind.Explosion, context.Transform.position + Vector3.up * 0.05f, context.Radius * explosionRadiusMultiplier);
 
             if (recovery > 0f) yield return new WaitForSeconds(recovery);
         }

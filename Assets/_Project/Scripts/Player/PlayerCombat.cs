@@ -4,6 +4,7 @@ using TheLastBeat.Abilities;
 using TheLastBeat.Buffs;
 using TheLastBeat.Combat;
 using TheLastBeat.Core;
+using TheLastBeat.VFX;
 using UnityEngine;
 
 namespace TheLastBeat.Player
@@ -125,6 +126,7 @@ namespace TheLastBeat.Player
             controller = GetComponent<PlayerController>();
             abilities = GetComponent<AbilityCaster>();
             buffs = GetComponent<BuffReceiver>();
+            Vfx.Prewarm();
             if (input == null) input = GetComponent<PlayerInputReader>();
             if (animator == null) animator = GetComponentInChildren<Animator>();
             if (hitMask.value == 0) hitMask = GameLayers.EnemyMask;
@@ -282,7 +284,11 @@ namespace TheLastBeat.Player
                 direction.y = 0f;
                 DamageInfo info = DamageInfo.Create(damage, gameObject, team,
                     overlaps[i].ClosestPoint(center), direction, step.knockback, true, step.heavy);
-                if (target.TakeDamage(info)) EnemyHit?.Invoke(currentStep, target, damage);
+                if (target.TakeDamage(info))
+                {
+                    EnemyHit?.Invoke(currentStep, target, damage);
+                    Vfx.Play(step.heavy ? VfxKind.ImpactHeavy : VfxKind.Impact, info.HitPoint);
+                }
             }
 
             if (logHits) Debug.Log($"[PlayerCombat] {step.stateName}: {damaged.Count} enemigo(s) en el área.", this);
