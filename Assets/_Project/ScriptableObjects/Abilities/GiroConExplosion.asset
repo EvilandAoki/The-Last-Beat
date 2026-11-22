@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7252918c3fa043fc1bd65cc8f7623bf1, type: 3}
+  m_Name: GiroConExplosion
+  m_EditorClassIdentifier: Assembly-CSharp::TheLastBeat.Abilities.SpinAbilityData
+  displayName: "Giro con explosi\xF3n"
+  description: "El caballero gira golpeando todo a su alrededor y termina con una
+    explosi\xF3n en \xE1rea."
+  icon: {fileID: 0}
+  cooldown: 10
+  damage: 8
+  radius: 2.8
+  knockback: 2
+  animatorState: Spin
+  upgrades:
+  - title: "M\xE1s da\xF1o"
+    description: "+25 % de da\xF1o en el giro y la explosi\xF3n."
+    damageMultiplier: 1.25
+    cooldownMultiplier: 1
+    radiusMultiplier: 1
+  - title: "M\xE1s alcance"
+    description: +20 % de radio.
+    damageMultiplier: 1
+    cooldownMultiplier: 1
+    radiusMultiplier: 1.2
+  - title: "Recarga r\xE1pida"
+    description: -20 % de recarga.
+    damageMultiplier: 1
+    cooldownMultiplier: 0.8
+    radiusMultiplier: 1
+  spinDuration: 1.4
+  turns: 3
+  tickInterval: 0.2
+  moveSpeedWhileSpinning: 0.35
+  tickKnockback: 2
+  explosionDamageMultiplier: 3
+  explosionRadiusMultiplier: 1.6
+  explosionKnockback: 10
+  explosionDelay: 0.12
+  recovery: 0.4
+  explosionState: Heavy1
+  explosionStateOffset: 0.4
+  explosionEffect: {fileID: 0}

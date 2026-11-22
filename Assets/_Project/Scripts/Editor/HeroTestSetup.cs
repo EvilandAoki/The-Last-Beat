@@ -33,6 +33,7 @@ namespace TheLastBeat.EditorTools
         {
             ("Armature|Idle", "Idle", true, -1, 60),
             ("Armature|Run", "Run", true, -1, 20),
+            ("Armature|Spin", "Spin", true, -1, 20),
             ("Armature|Light1", "Light1", false, 9, 22),
             ("Armature|Light2", "Light2", false, 9, 22),
             ("Armature|Heavy1", "Heavy1", false, 16, 34),
@@ -59,6 +60,21 @@ namespace TheLastBeat.EditorTools
             if (controller == null) return;
             SetupScene(controller);
             Debug.Log("[HeroTestSetup] Listo. Abre Test_Combo, dale Play y ataca con J (débil) y K (fuerte).");
+        }
+
+        /// <summary>
+        /// Reconfigura solo Hero.fbx (clips y avatar) y Hero.controller, sin tocar ninguna escena ni prefab.
+        /// Lo usan los menús de habilidades cuando se añade un clip nuevo.
+        /// </summary>
+        public static AnimatorController ConfigureModelAndController()
+        {
+            if (AssetImporter.GetAtPath(ModelPath) == null)
+            {
+                Debug.LogError($"[HeroTestSetup] No existe {ModelPath}. Genera el FBX con Tools/Blender/build_hero.py.");
+                return null;
+            }
+
+            return SetupModel() ? SetupController() : null;
         }
 
         private static bool SetupModel()
@@ -164,6 +180,9 @@ namespace TheLastBeat.EditorTools
             t = run.AddTransition(idle);
             t.hasExitTime = false; t.duration = 0.12f;
             t.AddCondition(AnimatorConditionMode.Less, 0.1f, "Speed");
+
+            // Spin (giro con explosión): lo lanza AbilityCaster con CrossFade y la propia habilidad decide cuándo salir.
+            Add("Spin", clips["Spin"], new Vector3(520, -120, 0));
 
             // Los golpes los lanza PlayerCombat (CrossFade) y encadena el combo en código.
             // Aquí solo hace falta que cada golpe vuelva a Idle cuando termina sin que lo continúen.

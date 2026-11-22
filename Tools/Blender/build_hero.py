@@ -1,6 +1,6 @@
 """
 Héroe provisional de The Last Beat: esqueleto Humanoid (nombres mixamorig:*), malla low-poly
-con pesos rígidos y clips Idle, Run, Light1, Light2, Heavy1 y Heavy2. Exporta un FBX listo para Unity.
+con pesos rígidos y clips Idle, Run, Spin (bucle; Unity gira el modelo), Light1, Light2, Heavy1 y Heavy2. Exporta un FBX listo para Unity.
 
 Uso:
   snap run blender -b -P Tools/Blender/build_hero.py -- <salida.fbx> [--preview <carpeta>]
@@ -19,7 +19,7 @@ from mathutils import Euler, Matrix, Vector
 
 FPS = 30
 HIT_FRAMES = {"Light1": 9, "Light2": 9, "Heavy1": 16, "Heavy2": 17}
-CLIP_FRAMES = {"Idle": 60, "Run": 20, "Light1": 22, "Light2": 22, "Heavy1": 34, "Heavy2": 38}
+CLIP_FRAMES = {"Idle": 60, "Run": 20, "Spin": 20, "Light1": 22, "Light2": 22, "Heavy1": 34, "Heavy2": 38}
 
 # ----------------------------------------------------------------------------------------------
 # Esqueleto
@@ -441,6 +441,17 @@ def crear_clips(arm):
     medio = [("Y", 90), ("X", 10)]     # la muñeca gira entre la guardia y el golpe
     reposo = golpe(mano=guardia)
 
+    # --- Spin (20 f, en bucle): postura de giro con el espadón extendido; Unity rota el modelo alrededor de Y.
+    def spin(vaiven):
+        p = golpe(giro=7 * vaiven, yaw=0, inclina=10, paso=0.4, lado="L",
+                  brazo=[("Y", -8), ("Z", 95)], codo=8,
+                  izq=[("Y", 8), ("Z", -65)])
+        p["LeftForeArm"] = [("Z", -10)]
+        p["Hips.loc"] = (0, 0, -0.012 * abs(vaiven))
+        return p
+
+    clip(arm, "Spin", [(0, spin(0)), (5, spin(1)), (10, spin(0)), (15, spin(-1)), (20, spin(0))])
+
     # --- Light1 (22 f, impacto en 9): tajo horizontal de derecha a izquierda, avanza el pie izquierdo
     clip(arm, "Light1", [
         (0, reposo),
@@ -557,6 +568,7 @@ def vista_previa(arm, carpeta):
     muestras = {
         "Idle": [0, 30],
         "Run": [0, 5, 10, 15],
+        "Spin": [0, 5, 15],
         "Light1": [0, 6, 9, 13],
         "Light2": [0, 6, 9, 13],
         "Heavy1": [0, 12, 16, 20],

@@ -34,6 +34,9 @@ namespace TheLastBeat.Abilities
         [Tooltip("El Animator del modelo (puede estar en un hijo).")]
         [SerializeField] private Animator animator;
 
+        [Tooltip("Estado del Animator al que se vuelve si una habilidad se cancela a medias.")]
+        [SerializeField] private string idleState = "Idle";
+
         [Header("Ranuras (0 = Habilidad 1, 1 = Habilidad 2)")]
         [SerializeField] private Slot[] slots = { new Slot(), new Slot() };
 
@@ -47,6 +50,7 @@ namespace TheLastBeat.Abilities
         private readonly Collider[] overlaps = new Collider[32];
         private readonly HashSet<IDamageable> damaged = new HashSet<IDamageable>();
         private Coroutine routine;
+        private AbilityContext current;
         private int locksHeld;
 
         public PlayerController Controller => controller;
@@ -169,6 +173,7 @@ namespace TheLastBeat.Abilities
             s.readyAt = Time.time + s.duration;
             s.onCooldown = s.duration > 0f;
             IsCasting = true;
+            current = context;
             routine = StartCoroutine(Run(context));
 
             Cast?.Invoke(slot, s.ability);
@@ -186,6 +191,12 @@ namespace TheLastBeat.Abilities
 
         private void Finish()
         {
+            if (current != null)
+            {
+                current.RunCleanups();
+                current = null;
+            }
+
             ReleaseLocks();
             IsCasting = false;
             routine = null;
@@ -193,8 +204,10 @@ namespace TheLastBeat.Abilities
 
         private void Abort()
         {
+            bool wasCasting = IsCasting;
             if (routine != null) StopCoroutine(routine);
             Finish();
+            if (wasCasting) PlayAnimation(idleState);
         }
 
         // ---------------------------------------------------------------- Utilidades para las habilidades
@@ -218,11 +231,17 @@ namespace TheLastBeat.Abilities
             while (locksHeld > 0) UnlockMovement();
         }
 
-        public void PlayAnimation(string state, float fade = 0.08f)
+        /// <summary>
+        /// Reproduce un estado del Animator con una mezcla corta. normalizedOffset (0-1) salta a un punto del clip,
+        /// por ejemplo para entrar directamente en el momento del golpe.
+        /// </summary>
+        public void PlayAnimation(string state, float fade = 0.08f, float normalizedOffset = 0f)
         {
             if (animator == null || string.IsNullOrEmpty(state)) return;
             int hash = Animator.StringToHash(state);
-            if (animator.HasState(0, hash)) animator.CrossFadeInFixedTime(hash, fade, 0, 0f);
+            if (!animator.HasState(0, hash)) return;
+            if (normalizedOffset > 0f) animator.CrossFade(hash, fade, 0, normalizedOffset);
+            else animator.CrossFadeInFixedTime(hash, fade, 0, 0f);
         }
 
         /// <summary>

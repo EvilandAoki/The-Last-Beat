@@ -18,6 +18,7 @@ namespace TheLastBeat.EditorTools
         private const string Folder = "Assets/_Project/ScriptableObjects/Abilities";
         private const string SlamPath = Folder + "/GolpeDeSuelo.asset";
         private const string SpinPath = Folder + "/OndaGiratoria.asset";
+        private const string SpinWithBlastPath = Folder + "/GiroConExplosion.asset";
         private const string TestScenePath = "Assets/_Project/Scenes/Test_Combo.unity";
 
         [MenuItem("The Last Beat/Habilidades/Crear habilidades de prueba y asignarlas al Knight")]
@@ -36,7 +37,7 @@ namespace TheLastBeat.EditorTools
             }
 
             Directory.CreateDirectory(Folder);
-            ShockwaveAbilityData slam = LoadOrCreate(SlamPath, a =>
+            ShockwaveAbilityData slam = LoadOrCreate<ShockwaveAbilityData>(SlamPath, a =>
             {
                 a.displayName = "Golpe de suelo";
                 a.description = "Golpea el suelo delante del héroe y empuja a los enemigos.";
@@ -50,7 +51,7 @@ namespace TheLastBeat.EditorTools
                     new AbilityUpgrade { title = "Recarga rápida", description = "-15 % de recarga.", cooldownMultiplier = 0.85f },
                 };
             });
-            ShockwaveAbilityData spin = LoadOrCreate(SpinPath, a =>
+            ShockwaveAbilityData spin = LoadOrCreate<ShockwaveAbilityData>(SpinPath, a =>
             {
                 a.displayName = "Onda giratoria";
                 a.description = "Onda alrededor del héroe que alcanza a todos los que lo rodean.";
@@ -70,15 +71,77 @@ namespace TheLastBeat.EditorTools
             Debug.Log("[AbilitySetup] Listo. En Test_Combo: Q = Golpe de suelo, E = Onda giratoria. Edita los valores en " + Folder + ".");
         }
 
-        private static ShockwaveAbilityData LoadOrCreate(string path, System.Action<ShockwaveAbilityData> init)
+        private static T LoadOrCreate<T>(string path, System.Action<T> init) where T : ScriptableObject
         {
-            var existing = AssetDatabase.LoadAssetAtPath<ShockwaveAbilityData>(path);
+            var existing = AssetDatabase.LoadAssetAtPath<T>(path);
             if (existing != null) return existing;
 
-            var asset = ScriptableObject.CreateInstance<ShockwaveAbilityData>();
+            var asset = ScriptableObject.CreateInstance<T>();
             init(asset);
             AssetDatabase.CreateAsset(asset, path);
             return asset;
+        }
+
+        [MenuItem("The Last Beat/Habilidades/Configurar Giro con explosión (tarea 10)")]
+        public static void SetupSpinWithBlast()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                Debug.LogError("[AbilitySetup] Sal de Play antes de ejecutar esto.");
+                return;
+            }
+
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(KnightPrefabTool.PrefabPath) == null)
+            {
+                Debug.LogError($"[AbilitySetup] No existe {KnightPrefabTool.PrefabPath}.");
+                return;
+            }
+
+            // 1. Clip Spin en Hero.fbx y su estado en Hero.controller (sin tocar escenas ni prefabs).
+            if (HeroTestSetup.ConfigureModelAndController() == null) return;
+
+            // 2. El asset de la habilidad (si ya existe no se pisa: tus ajustes se conservan).
+            Directory.CreateDirectory(Folder);
+            SpinAbilityData spin = LoadOrCreate<SpinAbilityData>(SpinWithBlastPath, a =>
+            {
+                a.displayName = "Giro con explosión";
+                a.description = "El caballero gira golpeando todo a su alrededor y termina con una explosión en área.";
+                a.cooldown = 10f; a.damage = 8f; a.radius = 2.8f; a.knockback = 2f;
+                a.animatorState = "Spin";
+                a.upgrades = new[]
+                {
+                    new AbilityUpgrade { title = "Más daño", description = "+25 % de daño en el giro y la explosión.", damageMultiplier = 1.25f },
+                    new AbilityUpgrade { title = "Más alcance", description = "+20 % de radio.", radiusMultiplier = 1.2f },
+                    new AbilityUpgrade { title = "Recarga rápida", description = "-20 % de recarga.", cooldownMultiplier = 0.8f },
+                };
+            });
+
+            // 3. En la ranura 2 (E) del prefab del Knight, sustituyendo a la Onda giratoria de prueba.
+            GameObject root = PrefabUtility.LoadPrefabContents(KnightPrefabTool.PrefabPath);
+            try
+            {
+                var caster = root.GetComponent<AbilityCaster>();
+                if (caster == null)
+                {
+                    Debug.LogError("[AbilitySetup] El prefab del Knight no tiene AbilityCaster. Ejecuta primero 'Crear habilidades de prueba'.");
+                    return;
+                }
+
+                var serialized = new SerializedObject(caster);
+                SerializedProperty slots = serialized.FindProperty("slots");
+                SerializedProperty ability = slots.GetArrayElementAtIndex(1).FindPropertyRelative("ability");
+                var current = ability.objectReferenceValue as AbilityData;
+                if (current == null || current.name == "OndaGiratoria") ability.objectReferenceValue = spin;
+                serialized.ApplyModifiedProperties();
+                PrefabUtility.SaveAsPrefabAsset(root, KnightPrefabTool.PrefabPath);
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+
+            AssetDatabase.SaveAssets();
+            Debug.Log("[AbilitySetup] Listo. En Test_Combo: E = Giro con explosión. Ajusta los valores en " + SpinWithBlastPath + ".");
         }
 
         private static void AssignToPrefab(AbilityData first, AbilityData second)
