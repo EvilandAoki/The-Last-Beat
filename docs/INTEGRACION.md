@@ -32,8 +32,9 @@ var info = DamageInfo.Create(amount, gameObject, Team.Demons, hitPoint, directio
 target.TakeDamage(info);   // target: IDamageable del Knight o de la Bardo
 ```
 
-`Interrupts` es `true` por defecto: un golpe a la bardo interrumpe su canción (tarea 18). Ponlo en `false` para daño
-que no debe interrumpir (veneno, quemadura).
+`Interrupts` es `true` por defecto: un golpe a la bardo corta su canción al instante y, si ya estaba cortada, reinicia el
+contador de recuperación (seguir golpeándola la mantiene sin cantar). Ponlo en `false` para daño que no debe interrumpir
+(veneno, quemadura).
 
 **Objetivos válidos**: el Knight está en la capa `Player` y la Bardo en `Ally` (`GameLayers.HeroesMask` agrupa ambas).
 Ambos tienen `Health`. La bardo huye de cualquier enemigo vivo en la capa `Enemy` que entre en su radio de peligro.
@@ -61,6 +62,7 @@ prueba de combate** solo sirve la primera vez; con el Knight ya como prefab solo
 | **Derrota** (bardo cae) | `BardCompanion.Died` |
 | **Derrota** (caballero cae) | `Health.Died` del Knight |
 | Estado de la canción (audio, VFX, UI) | `SongBuff.OnSongStateChanged`, `SongBuff.State`, `StateTimeRemaining` |
+| Canción interrumpida (sonido, aviso), también golpes repetidos | `SongBuff.OnInterrupted(bool reiniciado)`; `SongInterruptFeedback` ya hace parpadear a la bardo y acepta un clip de audio |
 | Recargas de habilidades (HUD) | `AbilityCaster.CooldownRemaining(slot)`, `CooldownNormalized(slot)`, eventos `Cast`, `CooldownStarted`, `CooldownFinished` |
 | Golpes del héroe a enemigos | `PlayerCombat.EnemyHit` |
 | Caballero potenciado | `BuffReceiver.IsBuffed`, `BuffChanged` |
