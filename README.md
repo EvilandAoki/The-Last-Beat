@@ -33,20 +33,25 @@ Assets/_Project/
     Player/      PlayerController, PlayerCombat, PlayerInputReader
     Abilities/   AbilityData y las habilidades del caballero
     Companions/  BardCompanion (IA) y SongBuff (canción)
-    Buffs/       BuffReceiver
+    Buffs/       BuffReceiver y BuffEffect (la potenciación de la canción)
+    UI/          GameHud (vida, recargas y canción)
+    VFX/         Vfx (pool de partículas) y VfxLibrary
     Debug/       herramientas de prueba (TheLastBeat.DebugTools)
     Editor/      menús de configuración (The Last Beat > ...)
   Scenes/        Pueblo.unity (la principal) y Test_Combo.unity (pruebas); cada escena con su NavMesh
-  Prefabs/       Heroes/ (Knight, Bardo)  Enemies/ (para los demonios)
-  ScriptableObjects/  Abilities/ (y Waves/ para las hordas)
-  Art/{Models,ConceptArt}   Audio/{Music,SFX}   VFX/   Input/
+  Prefabs/       Heroes/ (Knight, Bardo)  Enemies/ (para los demonios)  UI/ (Hud)
+  ScriptableObjects/  Abilities/  Buffs/  (y Waves/ para las hordas)
+  Art/{Models,ConceptArt}   Audio/{Music,SFX}   Input/
+  VFX/           Prefabs/  Materials/  Textures/  Resources/ (VfxLibrary)
 Tools/Blender/     genera el héroe provisional (build_hero.py)
 Tools/Planeacion/  scripts que crean issues, hitos y tablero en GitHub
 docs/              guías del equipo
 ```
 
 Convención: una carpeta por área dentro de `Scripts/` y el namespace `TheLastBeat.<Área>`.
-Para integrar enemigos, héroes y escenas, mira [docs/INTEGRACION.md](docs/INTEGRACION.md).
+Guías según tu línea de trabajo:
+- Enemigos, hordas, flujo del nivel y escena principal: [docs/INTEGRACION.md](docs/INTEGRACION.md).
+- Modelos, animaciones, audio e iconos: [docs/ARTE_Y_AUDIO.md](docs/ARTE_Y_AUDIO.md).
 
 ## Capas físicas
 
