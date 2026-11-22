@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using TheLastBeat.Abilities;
+using TheLastBeat.Buffs;
 using TheLastBeat.Combat;
 using TheLastBeat.Core;
 using UnityEngine;
@@ -93,6 +94,7 @@ namespace TheLastBeat.Player
 
         private PlayerController controller;
         private AbilityCaster abilities;
+        private BuffReceiver buffs;
         private readonly Dictionary<string, float> clipLengths = new Dictionary<string, float>();
         private readonly Collider[] overlaps = new Collider[24];
         private readonly HashSet<IDamageable> damaged = new HashSet<IDamageable>();
@@ -122,6 +124,7 @@ namespace TheLastBeat.Player
         {
             controller = GetComponent<PlayerController>();
             abilities = GetComponent<AbilityCaster>();
+            buffs = GetComponent<BuffReceiver>();
             if (input == null) input = GetComponent<PlayerInputReader>();
             if (animator == null) animator = GetComponentInChildren<Animator>();
             if (hitMask.value == 0) hitMask = GameLayers.EnemyMask;
@@ -266,6 +269,9 @@ namespace TheLastBeat.Player
             Vector3 center = transform.position + Vector3.up + transform.forward * step.range;
             int count = Physics.OverlapSphereNonAlloc(center, step.radius, overlaps, hitMask, QueryTriggerInteraction.Ignore);
 
+            // Potenciado (canción de la bardo): más daño. Sin potenciación el multiplicador es 1.
+            float damage = step.damage * (buffs != null ? buffs.DamageMultiplier : 1f);
+
             damaged.Clear();
             for (int i = 0; i < count; i++)
             {
@@ -274,9 +280,9 @@ namespace TheLastBeat.Player
 
                 Vector3 direction = target.Transform.position - transform.position;
                 direction.y = 0f;
-                DamageInfo info = DamageInfo.Create(step.damage, gameObject, team,
+                DamageInfo info = DamageInfo.Create(damage, gameObject, team,
                     overlaps[i].ClosestPoint(center), direction, step.knockback, true, step.heavy);
-                if (target.TakeDamage(info)) EnemyHit?.Invoke(currentStep, target, step.damage);
+                if (target.TakeDamage(info)) EnemyHit?.Invoke(currentStep, target, damage);
             }
 
             if (logHits) Debug.Log($"[PlayerCombat] {step.stateName}: {damaged.Count} enemigo(s) en el área.", this);

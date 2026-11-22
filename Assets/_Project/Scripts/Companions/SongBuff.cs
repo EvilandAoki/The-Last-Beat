@@ -31,7 +31,8 @@ namespace TheLastBeat.Companions
         [Header("Canción")]
         [Tooltip("Radio, en metros, dentro del que los aliados reciben el efecto.")]
         [SerializeField, Min(0.5f)] private float radius = 8f;
-        [SerializeField] private BuffEffect effect = new BuffEffect();
+        [Tooltip("Asset con los valores de la potenciación (daño, área de habilidades y esquiva).")]
+        [SerializeField] private BuffEffect effect;
         [Tooltip("Segundos en estado Interrumpida tras un golpe.")]
         [SerializeField, Min(0f)] private float interruptedDuration = 1f;
         [Tooltip("Segundos en estado Recuperando antes de volver a cantar. Más alto = más castigo por interrumpirla.")]
@@ -84,6 +85,9 @@ namespace TheLastBeat.Companions
         {
             health = GetComponent<Health>();
             if (alliesMask.value == 0) alliesMask = GameLayers.HeroesMask;
+            if (effect == null)
+                Debug.LogWarning("[SongBuff] Falta el asset de potenciación (BuffEffect): la canción no potenciará a nadie. " +
+                                 "Ejecuta The Last Beat > Bardo > Configurar potenciación (tarea 19).", this);
         }
 
         private void OnEnable()

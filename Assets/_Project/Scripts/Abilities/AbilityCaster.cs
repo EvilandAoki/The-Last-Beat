@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using TheLastBeat.Buffs;
 using TheLastBeat.Combat;
 using TheLastBeat.Core;
 using TheLastBeat.Player;
@@ -47,6 +48,7 @@ namespace TheLastBeat.Abilities
 
         private PlayerController controller;
         private PlayerCombat combat;
+        private BuffReceiver buffs;
         private readonly Collider[] overlaps = new Collider[32];
         private readonly HashSet<IDamageable> damaged = new HashSet<IDamageable>();
         private readonly HashSet<IDamageable> sessionHits = new HashSet<IDamageable>();
@@ -72,6 +74,7 @@ namespace TheLastBeat.Abilities
         {
             controller = GetComponent<PlayerController>();
             combat = GetComponent<PlayerCombat>();
+            buffs = GetComponent<BuffReceiver>();
             if (input == null) input = GetComponent<PlayerInputReader>();
             if (animator == null) animator = GetComponentInChildren<Animator>();
             if (hitMask.value == 0) hitMask = GameLayers.EnemyMask;
@@ -178,8 +181,9 @@ namespace TheLastBeat.Abilities
                 Caster = this,
                 Data = s.ability,
                 Level = level,
-                Damage = s.ability.GetDamage(level),
-                Radius = s.ability.GetRadius(level),
+                // Potenciado (canción de la bardo): más daño y más área en todas las habilidades (giro, embestida...).
+                Damage = s.ability.GetDamage(level) * (buffs != null ? buffs.DamageMultiplier : 1f),
+                Radius = s.ability.GetRadius(level) * (buffs != null ? buffs.AreaMultiplier : 1f),
                 Cooldown = s.ability.GetCooldown(level),
             };
 
