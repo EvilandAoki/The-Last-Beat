@@ -128,11 +128,11 @@ namespace TheLastBeat.DebugTools
             }
         }
 
-        /// <summary>Una línea de texto a la izquierda: rojo con contorno negro, legible sobre un suelo blanco o uno oscuro.</summary>
+        /// <summary>Una línea de texto a la derecha (el HUD real ocupa la izquierda): rojo con contorno negro, legible sobre cualquier suelo.</summary>
         private static void Line(ref float y, string text)
         {
             const float height = 22f;
-            GuiText.DrawOutlined(new Rect(16f, y, Screen.width - 32f, height), text, 15, TextColor, OutlineColor, 1f, TextAnchor.MiddleLeft);
+            GuiText.DrawOutlined(new Rect(16f, y, Screen.width - 32f, height), text, 15, TextColor, OutlineColor, 1f, TextAnchor.MiddleRight);
             y += height;
         }
     }

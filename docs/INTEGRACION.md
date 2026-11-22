@@ -63,6 +63,7 @@ prueba de combate** solo sirve la primera vez; con el Knight ya como prefab solo
 | **Derrota** (caballero cae) | `Health.Died` del Knight |
 | Estado de la canción (audio, VFX, UI) | `SongBuff.OnSongStateChanged`, `SongBuff.State`, `StateTimeRemaining` |
 | Canción interrumpida (sonido, aviso), también golpes repetidos | `SongBuff.OnInterrupted(bool reiniciado)`; `SongInterruptFeedback` ya hace parpadear a la bardo y acepta un clip de audio |
+| HUD (vida, recargas y canción) | Arrastra `Prefabs/UI/Hud.prefab` a la escena: encuentra solo al caballero y a la bardo y se actualiza por eventos |
 | Recargas de habilidades (HUD) | `AbilityCaster.CooldownRemaining(slot)`, `CooldownNormalized(slot)`, eventos `Cast`, `CooldownStarted`, `CooldownFinished` |
 | Golpes del héroe a enemigos | `PlayerCombat.EnemyHit` |
 | Caballero potenciado | `BuffReceiver.IsBuffed`, `BuffChanged`; los valores (daño, área de habilidades, esquiva) viven en el asset `ScriptableObjects/Buffs/PotenciacionDeCancion.asset` |
