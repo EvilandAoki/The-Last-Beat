@@ -351,7 +351,8 @@ namespace TheLastBeat.EditorTools
             }
         }
 
-        private static void RebakeNavMesh()
+        /// <summary>Vuelve a hornear el NavMesh de la escena abierta en un asset propio (nunca el de otra escena).</summary>
+        public static void RebakeNavMesh()
         {
             var surface = Object.FindFirstObjectByType<NavMeshSurface>();
             if (surface == null)

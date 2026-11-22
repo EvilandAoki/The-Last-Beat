@@ -1,3 +1,4 @@
+using TheLastBeat.Core;
 using UnityEngine;
 
 namespace TheLastBeat.Player
@@ -46,6 +47,8 @@ namespace TheLastBeat.Player
         private void Awake()
         {
             controller = GetComponent<CharacterController>();
+            // Los aliados (la bardo) no bloquean el paso del héroe: él los atraviesa y ellos se apartan solos.
+            controller.excludeLayers = controller.excludeLayers.value | LayerMask.GetMask(GameLayers.AllyName);
             if (input == null) input = GetComponent<PlayerInputReader>();
             if (cameraTransform == null && Camera.main != null) cameraTransform = Camera.main.transform;
         }
