@@ -28,7 +28,7 @@ namespace TheLastBeat.UI
         [SerializeField] private BardCompanion bard;
 
         [Header("Colores")]
-        [SerializeField] private Color knightColor = new Color(0.85f, 0.2f, 0.2f);
+        [SerializeField] private Color knightColor = new Color(0.3f, 0.6f, 1f);
         [SerializeField] private Color bardColor = new Color(0.75f, 0.35f, 0.85f);
         [SerializeField] private Color readyColor = new Color(0.4f, 0.95f, 0.5f);
         [SerializeField] private Color coolingColor = new Color(0.55f, 0.55f, 0.55f);
@@ -36,6 +36,8 @@ namespace TheLastBeat.UI
         [SerializeField] private Color singingColor = new Color(0.3f, 0.9f, 0.45f);
         [SerializeField] private Color interruptedColor = new Color(0.95f, 0.2f, 0.2f);
         [SerializeField] private Color recoveringColor = new Color(1f, 0.7f, 0.2f);
+        [Tooltip("Canción apagada (el pueblo en silencio, antes del combate).")]
+        [SerializeField] private Color silentColor = new Color(0.45f, 0.47f, 0.52f);
 
         private class SlotView
         {
@@ -102,6 +104,7 @@ namespace TheLastBeat.UI
             {
                 song.OnSongStateChanged += OnSongState;
                 song.OnInterrupted += OnSongInterrupted;
+                song.OnActiveChanged += OnSongActive;
             }
         }
 
@@ -120,6 +123,7 @@ namespace TheLastBeat.UI
             {
                 song.OnSongStateChanged -= OnSongState;
                 song.OnInterrupted -= OnSongInterrupted;
+                song.OnActiveChanged -= OnSongActive;
             }
         }
 
@@ -159,6 +163,13 @@ namespace TheLastBeat.UI
             EnsureTicker();
         }
 
+        private void OnSongActive(bool active)
+        {
+            if (songDisc == null) return;
+            ApplySongState(song.State);
+            EnsureTicker();
+        }
+
         private void OnSongInterrupted(bool restarted)
         {
             songPopUntil = Time.time + PopDuration;
@@ -174,7 +185,7 @@ namespace TheLastBeat.UI
 
         private bool NeedsTick()
         {
-            if (song != null && !song.IsSinging) return true;
+            if (song != null && song.isActiveAndEnabled && !song.IsSinging) return true;
             if (Time.time < songPopUntil) return true;
             if (abilities == null) return false;
             for (int i = 0; i < slots.Length; i++)
@@ -246,8 +257,20 @@ namespace TheLastBeat.UI
             view.shownSeconds = -1;
         }
 
+        /// <summary>Canción apagada: el componente está desactivado y no es porque la bardo cayó (eso es Interrupted).</summary>
+        private bool SongSilent => song != null && !song.isActiveAndEnabled && song.State != SongState.Interrupted;
+
         private void ApplySongState(SongState state)
         {
+            if (SongSilent)
+            {
+                songDisc.color = silentColor;
+                songRing.enabled = false;
+                songTimer.enabled = false;
+                SetCross(false);
+                return;
+            }
+
             switch (state)
             {
                 case SongState.Singing:
