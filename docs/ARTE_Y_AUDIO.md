@@ -51,7 +51,7 @@ Los parpadeos y el icono de la canción usan los renderers de los hijos, así qu
 
 | Qué suena | Dónde engancharlo |
 |---|---|
-| Canción interrumpida | Arrastra el clip al campo `Interrupt Clip` de `SongInterruptFeedback` en `Bardo.prefab`. Suena solo, sin código |
+| Canción interrumpida | Ya lo reproduce `GameSfx` (tarea 32) desde `SongBuff.OnInterrupted`, con los clips `Cancion_Interrumpida_*`. **Deja vacío el campo `Interrupt Clip` de `SongInterruptFeedback`**: si se llena, el sonido se oiría dos veces |
 | Capas de música según la canción | `SongBuff.OnSongStateChanged(SongState)`: `Singing`, `Interrupted`, `Recovering` |
 | Cada vez que la golpean | `SongBuff.OnInterrupted(bool reiniciado)` (también con golpes repetidos) |
 | Inicio de cada golpe del combo | `PlayerCombat.StepStarted(int)` |

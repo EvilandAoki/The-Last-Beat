@@ -94,6 +94,12 @@ namespace TheLastBeat.Companions
         /// </summary>
         public event Action<bool> OnInterrupted;
 
+        /// <summary>
+        /// Se lanza al encender (true) o apagar (false) el componente. El nivel empieza con la canción apagada (pueblo en
+        /// silencio): la interfaz lo usa para mostrarla "apagada" en lugar de "recuperándose".
+        /// </summary>
+        public event Action<bool> OnActiveChanged;
+
         private void Awake()
         {
             health = GetComponent<Health>();
@@ -111,11 +117,14 @@ namespace TheLastBeat.Companions
                 health.Died += OnBardDied;
             }
 
-            if (started) return;
+            if (!started)
+            {
+                started = true;
+                if (startSinging) SetState(SongState.Singing);
+                else BeginRecovery();
+            }
 
-            started = true;
-            if (startSinging) SetState(SongState.Singing);
-            else BeginRecovery();
+            OnActiveChanged?.Invoke(true);
         }
 
         private void OnDisable()
@@ -128,6 +137,7 @@ namespace TheLastBeat.Companions
 
             ClearAll();
             Vfx.Stop(ref aura);
+            OnActiveChanged?.Invoke(false);
         }
 
         private void Update()
