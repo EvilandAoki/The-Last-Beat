@@ -2237,6 +2237,17 @@ MonoBehaviour:
   m_SelectedFaces: 
   m_SelectedEdges: []
   m_SelectedVertices: 
+--- !u!114 &319265063 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1982221142888466728, guid: ba072f299ae0390b0ac8850188f29ec7, type: 3}
+  m_PrefabInstance: {fileID: 1928659226}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e1222f481ae8414a983161013300f1e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TheLastBeat.Companions.BardCompanion
 --- !u!43 &391508651
 Mesh:
   m_ObjectHideFlags: 0
@@ -2593,6 +2604,64 @@ Mesh:
       - serializedVersion: 1
         m_IndexStart: 0
         m_IndexCount: 0
+--- !u!1 &409733402
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 409733404}
+  - component: {fileID: 409733403}
+  m_Layer: 0
+  m_Name: Nivel
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &409733403
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 409733402}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4a6141a40282d2843acd62be80a4b82a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TheLastBeat.Level.LevelFlow
+  spawner: {fileID: 1440557545}
+  knight: {fileID: 1727095654}
+  bard: {fileID: 319265063}
+  silentStart: 1
+  introDelay: 0.75
+  victoryDelay: 1.5
+  defeatDelay: 1.5
+  introMessage: "El pueblo est\xE1 en silencio..."
+  combatMessage: "\xA1Defiende la canci\xF3n!"
+  waveClearedMessage: "\xA1Horda superada!"
+  knightDownMessage: "El caballero cay\xF3"
+  bardDownMessage: "La bardo cay\xF3: la m\xFAsica se apag\xF3"
+  menuSceneName: MainMenu
+--- !u!4 &409733404
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 409733402}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 2081031367}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!43 &413029391
 Mesh:
   m_ObjectHideFlags: 0
@@ -8463,7 +8532,7 @@ MonoBehaviour:
   data: {fileID: 11400000, guid: 4bfef44037b9a1542a8ea6cd898e39e1, type: 2}
   pool: {fileID: 110465641}
   spawnPointsRoot: {fileID: 1307230073}
-  autoStart: 1
+  autoStart: 0
   startDelay: 2
   minDistanceFromHeroes: 8
   logToConsole: 1
@@ -10703,6 +10772,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 1263509333970627734, guid: b28dc8ee0881c16528235d25c56efeb0, type: 3}
   m_PrefabInstance: {fileID: 1727095645}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1727095654 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1520496143523916806, guid: b28dc8ee0881c16528235d25c56efeb0, type: 3}
+  m_PrefabInstance: {fileID: 1727095645}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 946e902330efff9449a6135925ed7f57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TheLastBeat.Player.PlayerController
 --- !u!1 &1732448033
 GameObject:
   m_ObjectHideFlags: 0
@@ -11095,6 +11175,56 @@ MonoBehaviour:
   m_SelectedFaces: 
   m_SelectedEdges: []
   m_SelectedVertices: 
+--- !u!1 &1883610597
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1883610599}
+  - component: {fileID: 1883610598}
+  m_Layer: 0
+  m_Name: Mensajes_Nivel
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1883610598
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1883610597}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d959449378ef03849a542433be28aee4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TheLastBeat.UI.LevelBannerUI
+  flow: {fileID: 409733403}
+  fadeIn: 0.25
+  hold: 2.2
+  fadeOut: 0.6
+  waveColor: {r: 1, g: 0.85, b: 0.35, a: 1}
+  clearedText: PUEBLO LIBERADO
+--- !u!4 &1883610599
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1883610597}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1888303481
 GameObject:
   m_ObjectHideFlags: 0
@@ -11502,6 +11632,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4375784682564708123, guid: ba072f299ae0390b0ac8850188f29ec7, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5016350286375577779, guid: ba072f299ae0390b0ac8850188f29ec7, type: 3}
+      propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
@@ -12946,6 +13080,88 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1307230073}
   m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
+--- !u!1 &2081031366
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2081031367}
+  - component: {fileID: 2081031369}
+  - component: {fileID: 2081031368}
+  m_Layer: 0
+  m_Name: Trigger_Plaza
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2081031367
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2081031366}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 1.5, z: 2}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 409733404}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2081031368
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2081031366}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 155eef2a8d23efc4193fb0c10ce04484, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TheLastBeat.Level.ZoneTrigger
+  once: 1
+  onPlayerEnter:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 409733403}
+        m_TargetAssemblyTypeName: TheLastBeat.Level.LevelFlow, Assembly-CSharp
+        m_MethodName: StartCombat
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: 
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+--- !u!65 &2081031369
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2081031366}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 10, y: 3, z: 2}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -12961,3 +13177,5 @@ SceneRoots:
   - {fileID: 160292494}
   - {fileID: 110465642}
   - {fileID: 1440557546}
+  - {fileID: 409733404}
+  - {fileID: 1883610599}
