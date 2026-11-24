@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using TheLastBeat.Buffs;
 using TheLastBeat.Combat;
 using TheLastBeat.Core;
+using TheLastBeat.Feedback;
 using TheLastBeat.Player;
 using TheLastBeat.VFX;
 using UnityEngine;
@@ -267,7 +268,7 @@ namespace TheLastBeat.Abilities
         /// <summary>
         /// Daña a todos los enemigos dentro de una esfera, una sola vez cada uno. Devuelve a cuántos golpeó.
         /// </summary>
-        public int HitArea(Vector3 center, float radius, float damage, float knockback, bool heavy = true)
+        public int HitArea(Vector3 center, float radius, float damage, float knockback, bool heavy = true, ImpactKind? impact = null)
         {
             int count = Physics.OverlapSphereNonAlloc(center, radius, overlaps, hitMask, QueryTriggerInteraction.Ignore);
             damaged.Clear();
@@ -285,6 +286,7 @@ namespace TheLastBeat.Abilities
                 {
                     hits++;
                     Vfx.Play(heavy ? VfxKind.ImpactHeavy : VfxKind.Impact, info.HitPoint);
+                    ImpactFeedback.Hit(info.HitPoint, damage, impact ?? (heavy ? ImpactKind.Heavy : ImpactKind.Light));
                 }
             }
 
@@ -306,7 +308,7 @@ namespace TheLastBeat.Abilities
         /// añaden). Sirve para golpear a lo largo de un recorrido sin dañar dos veces al mismo enemigo. Devuelve cuántos golpeó ahora.
         /// </summary>
         public int HitBox(Vector3 center, Vector3 halfExtents, Quaternion rotation, float damage, float knockback,
-            bool heavy, HashSet<IDamageable> alreadyHit)
+            bool heavy, HashSet<IDamageable> alreadyHit, ImpactKind? impact = null)
         {
             int count = Physics.OverlapBoxNonAlloc(center, halfExtents, overlaps, rotation, hitMask, QueryTriggerInteraction.Ignore);
             int hits = 0;
@@ -324,6 +326,7 @@ namespace TheLastBeat.Abilities
                     alreadyHit.Add(target);
                     hits++;
                     Vfx.Play(heavy ? VfxKind.ImpactHeavy : VfxKind.Impact, info.HitPoint);
+                    ImpactFeedback.Hit(info.HitPoint, damage, impact ?? (heavy ? ImpactKind.Heavy : ImpactKind.Light));
                 }
             }
 

@@ -66,6 +66,7 @@ prueba de combate** solo sirve la primera vez; con el Knight ya como prefab solo
 | HUD (vida, recargas y canción) | Arrastra `Prefabs/UI/Hud.prefab` a la escena: encuentra solo al caballero y a la bardo y se actualiza por eventos |
 | Recargas de habilidades (HUD) | `AbilityCaster.CooldownRemaining(slot)`, `CooldownNormalized(slot)`, eventos `Cast`, `CooldownStarted`, `CooldownFinished` |
 | Golpes del héroe a enemigos | `PlayerCombat.EnemyHit` |
+| Sensación de impacto (pausa, sacudida, números de daño) | `ImpactFeedback.Hit(punto, daño, ImpactKind.X)` una vez por enemigo golpeado. Los valores se editan en `VFX/Resources/ImpactSettings.asset` (sin él usa valores por defecto). La cámara no necesita configuración: se añade sola el listener de Cinemachine |
 | Efectos visuales (partículas con pooling) | `Vfx.Play(VfxKind.X, posición)` (una vez) o `Vfx.Follow(...)` + `Vfx.Stop(ref fx)` (acompañan a un objeto). Los prefabs viven en `VFX/Prefabs` y se registran en `VFX/Resources/VfxLibrary.asset`; para añadir uno nuevo, un valor en `VfxKind` y una entrada en la biblioteca |
 | Caballero potenciado | `BuffReceiver.IsBuffed`, `BuffChanged`; los valores (daño, área de habilidades, esquiva) viven en el asset `ScriptableObjects/Buffs/PotenciacionDeCancion.asset` |
 | Esquiva automática | `KnightAutoDodge.Dodged`, `DodgeCount` (es un `IDamageFilter` del Knight; el aviso lo da `DodgeFeedback`) |

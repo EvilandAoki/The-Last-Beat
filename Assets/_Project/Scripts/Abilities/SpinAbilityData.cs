@@ -1,4 +1,5 @@
 using System.Collections;
+using TheLastBeat.Feedback;
 using TheLastBeat.VFX;
 using UnityEngine;
 
@@ -61,7 +62,7 @@ namespace TheLastBeat.Abilities
 
                 if (elapsed >= nextTick)
                 {
-                    caster.HitArea(Center(context), context.Radius, context.Damage, tickKnockback, false);
+                    caster.HitArea(Center(context), context.Radius, context.Damage, tickKnockback, false, ImpactKind.Tick);
                     nextTick += tickInterval;
                 }
 
@@ -78,7 +79,7 @@ namespace TheLastBeat.Abilities
 
             Vector3 center = Center(context);
             caster.HitArea(center, context.Radius * explosionRadiusMultiplier,
-                context.Damage * explosionDamageMultiplier, explosionKnockback, true);
+                context.Damage * explosionDamageMultiplier, explosionKnockback, true, ImpactKind.Explosion);
             Vfx.Play(VfxKind.Explosion, context.Transform.position + Vector3.up * 0.05f, context.Radius * explosionRadiusMultiplier);
 
             if (recovery > 0f) yield return new WaitForSeconds(recovery);

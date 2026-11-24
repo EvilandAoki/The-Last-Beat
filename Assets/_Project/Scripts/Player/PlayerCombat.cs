@@ -4,6 +4,7 @@ using TheLastBeat.Abilities;
 using TheLastBeat.Buffs;
 using TheLastBeat.Combat;
 using TheLastBeat.Core;
+using TheLastBeat.Feedback;
 using TheLastBeat.VFX;
 using UnityEngine;
 
@@ -127,6 +128,7 @@ namespace TheLastBeat.Player
             abilities = GetComponent<AbilityCaster>();
             buffs = GetComponent<BuffReceiver>();
             Vfx.Prewarm();
+            ImpactFeedback.Prewarm();
             if (input == null) input = GetComponent<PlayerInputReader>();
             if (animator == null) animator = GetComponentInChildren<Animator>();
             if (hitMask.value == 0) hitMask = GameLayers.EnemyMask;
@@ -288,6 +290,10 @@ namespace TheLastBeat.Player
                 {
                     EnemyHit?.Invoke(currentStep, target, damage);
                     Vfx.Play(step.heavy ? VfxKind.ImpactHeavy : VfxKind.Impact, info.HitPoint);
+
+                    // Sensación de impacto: el remate del combo (el "tercer golpe") es el más fuerte.
+                    ImpactKind kind = !step.heavy ? ImpactKind.Light : step.IsFinisher ? ImpactKind.Finisher : ImpactKind.Heavy;
+                    ImpactFeedback.Hit(info.HitPoint, damage, kind);
                 }
             }
 
