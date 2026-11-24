@@ -13361,6 +13361,57 @@ Mesh:
       - serializedVersion: 1
         m_IndexStart: 0
         m_IndexCount: 0
+--- !u!1 &2030226533
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2030226535}
+  - component: {fileID: 2030226534}
+  m_Layer: 0
+  m_Name: Pantallas_Fin
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &2030226534
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2030226533}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7824598ba09860549941f3a0dead35dd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TheLastBeat.UI.EndScreenUI
+  flow: {fileID: 409733403}
+  victoryTitle: "\xA1EL PUEBLO RECUPER\xD3 SU RITMO!"
+  victorySubtitle: "La m\xFAsica volvi\xF3 a las calles."
+  victoryColor: {r: 1, g: 0.85, b: 0.35, a: 1}
+  defeatTitle: "LA M\xDASICA SE APAG\xD3"
+  defeatHint: "Protege a la bardo: sin su canci\xF3n no hay victoria."
+  defeatColor: {r: 0.95, g: 0.3, b: 0.3, a: 1}
+--- !u!4 &2030226535
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2030226533}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2071187711
 GameObject:
   m_ObjectHideFlags: 0
@@ -13492,3 +13543,4 @@ SceneRoots:
   - {fileID: 409733404}
   - {fileID: 1883610599}
   - {fileID: 588132144}
+  - {fileID: 2030226535}
