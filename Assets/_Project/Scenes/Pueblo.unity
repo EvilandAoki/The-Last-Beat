@@ -486,7 +486,6 @@ GameObject:
   m_Component:
   - component: {fileID: 110465642}
   - component: {fileID: 110465641}
-  - component: {fileID: 110465640}
   m_Layer: 0
   m_Name: Enemigos
   m_TagString: Untagged
@@ -494,23 +493,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &110465640
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 110465639}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6ec565382801c0a41af18754a2c883c7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TheLastBeat.DebugTools.EnemyStressTest
-  pool: {fileID: 110465641}
-  key: 98
-  count: 30
-  center: {x: 0, y: 0, z: 18}
-  radius: 8
 --- !u!114 &110465641
 MonoBehaviour:
   m_ObjectHideFlags: 0
