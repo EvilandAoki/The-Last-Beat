@@ -533,6 +533,68 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: f7ce401bad9fbae6fbdccdc8235b8ce2, type: 3}
+--- !u!1001 &193063732
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2109299198}
+    m_Modifications:
+    - target: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -4
+      objectReference: {fileID: 0}
+    - target: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.11220549
+      objectReference: {fileID: 0}
+    - target: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 16
+      objectReference: {fileID: 0}
+    - target: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5254157159956993578, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_Name
+      value: Soldado_Prueba_2
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+--- !u!4 &193063733 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+  m_PrefabInstance: {fileID: 193063732}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &214779038
 GameObject:
   m_ObjectHideFlags: 0
@@ -5332,6 +5394,68 @@ Mesh:
       - serializedVersion: 1
         m_IndexStart: 0
         m_IndexCount: 0
+--- !u!1001 &899624251
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2109299198}
+    m_Modifications:
+    - target: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.13983077
+      objectReference: {fileID: 0}
+    - target: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 14
+      objectReference: {fileID: 0}
+    - target: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5254157159956993578, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_Name
+      value: Soldado_Prueba_1
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+--- !u!4 &899624252 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+  m_PrefabInstance: {fileID: 899624251}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &978642799
 GameObject:
   m_ObjectHideFlags: 0
@@ -10525,6 +10649,68 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1307230073}
   m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
+--- !u!1001 &1683664776
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2109299198}
+    m_Modifications:
+    - target: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.102455035
+      objectReference: {fileID: 0}
+    - target: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 16
+      objectReference: {fileID: 0}
+    - target: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5254157159956993578, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+      propertyPath: m_Name
+      value: Soldado_Prueba_3
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+--- !u!4 &1683664777 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1762745901382510482, guid: 52833899b16b1ed4ca9a64b640d05dcf, type: 3}
+  m_PrefabInstance: {fileID: 1683664776}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1727095645
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -12830,6 +13016,40 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1307230073}
   m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
+--- !u!1 &2109299197
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2109299198}
+  m_Layer: 0
+  m_Name: Soldados_Prueba
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2109299198
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2109299197}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 899624252}
+  - {fileID: 193063733}
+  - {fileID: 1683664777}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -12843,3 +13063,4 @@ SceneRoots:
   - {fileID: 1928659226}
   - {fileID: 588222381}
   - {fileID: 160292494}
+  - {fileID: 2109299198}
