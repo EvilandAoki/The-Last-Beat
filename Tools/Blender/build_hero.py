@@ -30,6 +30,8 @@ HIT_FRAMES = {"Light1": 9, "Light2": 9, "Heavy1": 16, "Heavy2": 17}
 BRAZO_FRENTE = [("Y", -80)]
 CODO_FRENTE = 85
 MANO_FRENTE = [("Y", 0)]
+MANO_ARRIBA = [("Y", 10), ("Z", 90)]  # mismo brazo, hoja hacia arriba con el filo al frente
+MANO_GUARDIA = MANO_ARRIBA          # MANO_FRENTE para llevar la hoja al frente
 
 # Puño: la mano derecha cierra los dedos alrededor de la empuñadura; la izquierda queda relajada.
 PUNO = {}
@@ -167,7 +169,7 @@ def base(**extra):
     p = {
         "LeftArm": [("Y", 68)], "RightArm": BRAZO_FRENTE,
         "LeftForeArm": [("Z", -18)], "RightForeArm": [("Z", CODO_FRENTE)],
-        "RightHand": MANO_FRENTE,
+        "RightHand": MANO_GUARDIA,
         "LeftUpLeg": [("X", -4)], "RightUpLeg": [("X", 4)],
         "LeftLeg": [("X", 6)], "RightLeg": [("X", 6)],
     }
@@ -194,7 +196,7 @@ def crear_clips(arm):
         p = base(**torso(0, 1.5 * resp))
         p["Hips.loc"] = (0, 0, -0.01 * resp)
         p["Head"] = [("X", -1.0 * resp)]
-        p["RightHand"] = [("Y", 3 * sway)]
+        p["RightHand"] = MANO_GUARDIA + [("Y", 3 * sway)]
         p["RightArm"] = [("Y", -80 + 2 * sway)]
         return pies_planos(p)
 
@@ -209,7 +211,7 @@ def crear_clips(arm):
             "LeftFoot": [("X", -10 * a)], "RightFoot": [("X", 10 * a)],
             "LeftArm": [("Y", 60), ("X", 40 * a)], "RightArm": [("Y", -80), ("X", -8 * a)],
             "LeftForeArm": [("Z", -75)], "RightForeArm": [("Z", CODO_FRENTE)],
-            "RightHand": MANO_FRENTE,
+            "RightHand": MANO_GUARDIA,
         }
         p.update(torso(giro=-8 * a, inclina=14))
         p["Hips.loc"] = (0, 0, fase_vertical)
@@ -223,7 +225,7 @@ def crear_clips(arm):
         (20, run(True, -0.02)),
     ], suelo=False)
 
-    guardia = MANO_FRENTE              # espadón al frente, igual que Idle
+    guardia = MANO_GUARDIA             # la misma guardia que Idle
     medio = [("Y", 90), ("X", 10)]     # la muñeca gira entre la guardia y el golpe
     reposo = golpe(brazo=BRAZO_FRENTE, codo=CODO_FRENTE, mano=guardia)
 
