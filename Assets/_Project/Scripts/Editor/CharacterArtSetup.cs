@@ -1,7 +1,8 @@
 using System.Linq;
 using TheLastBeat.Combat;
+using TheLastBeat.Enemies;
 using UnityEditor;
-using UnityEditorInternal;
+using UnityEditor.Animations;
 using UnityEngine;
 
 namespace TheLastBeat.EditorTools
@@ -17,6 +18,23 @@ namespace TheLastBeat.EditorTools
         private const string SwordPath = "Assets/_Project/Art/Models/Caballero/Espadon.fbx";
         private const string KnightTexturePath = "Assets/_Project/Art/Models/Caballero/Caballero_Color.jpg";
         private const string KnightMaterialPath = "Assets/_Project/Art/Models/Caballero/Caballero.mat";
+        private const string SwordTexturePath = "Assets/_Project/Art/Models/Caballero/Espadon_Color.jpg";
+        private const string SwordMaterialPath = "Assets/_Project/Art/Models/Caballero/Espadon.mat";
+
+        private const string HeroModelPath = "Assets/_Project/Art/Models/Hero/Hero.fbx";
+        private const string SoldierRoot = "Assets/_Project/Art/Models/Soldado";
+        private const string SoldierModelPath = SoldierRoot + "/Soldado.fbx";
+        private const string SoldierTexturePath = SoldierRoot + "/Soldado_Color.jpg";
+        private const string SoldierMaterialPath = SoldierRoot + "/Soldado.mat";
+        private const string ScimitarPath = SoldierRoot + "/Cimitarra.fbx";
+        private const string ScimitarTexturePath = SoldierRoot + "/Cimitarra_Color.jpg";
+        private const string ScimitarMaterialPath = SoldierRoot + "/Cimitarra.mat";
+        private const string SoldierControllerPath = SoldierRoot + "/Soldado.controller";
+        private const string SoldierPrefabPath = "Assets/_Project/Prefabs/Enemies/Soldado.prefab";
+        private const float SoldierHeight = 1.8f;
+        // Piezas de la cápsula provisional; AvisoAtaque se queda (es el aviso del golpe).
+        private static readonly string[] SoldierPlaceholderParts = { "Cuerpo", "Frente", "Cuerno_D", "Cuerno_I" };
+
         private const float HeroHeight = 1.8f;
 
         /// <summary>
@@ -32,6 +50,7 @@ namespace TheLastBeat.EditorTools
             GameObject swordAsset = ImportStatic(SwordPath);
             if (model == null || swordAsset == null) return;
             UseTexturedMaterial(KnightModelPath, KnightTexturePath, KnightMaterialPath);
+            UseTexturedMaterial(SwordPath, SwordTexturePath, SwordMaterialPath);
 
             GameObject root = PrefabUtility.LoadPrefabContents(KnightPrefabTool.PrefabPath);
             try
@@ -68,8 +87,8 @@ namespace TheLastBeat.EditorTools
 
                 foreach (MonoBehaviour behaviour in oldModel.GetComponents<MonoBehaviour>())
                 {
-                    ComponentUtility.CopyComponent(behaviour);
-                    ComponentUtility.PasteComponentAsNew(newModel);
+                    UnityEditorInternal.ComponentUtility.CopyComponent(behaviour);
+                    UnityEditorInternal.ComponentUtility.PasteComponentAsNew(newModel);
                 }
 
                 Remap(root, oldModel, newModel, animator);
@@ -145,6 +164,118 @@ namespace TheLastBeat.EditorTools
             Debug.Log($"[CharacterArtSetup] Caballero listo: cabeza a {head.position.y:F2} m; mano a {hand.position.y:F2} m y " +
                       $"hombro a {shoulder.position.y:F2} m (en T-pose deben coincidir); material '{material?.name}' con " +
                       $"shader '{material?.shader.name}' y textura '{(material != null && material.mainTexture != null ? material.mainTexture.name : "NINGUNA")}'.");
+        }
+
+        /// <summary>
+        /// Pone el demonio soldado de Tripo3D (rig de Mixamo, reducido a menos de 8.000 triángulos) en Soldado.prefab:
+        /// modelo Humanoid a 1,8 m, Soldado.controller con los parámetros que usa EnemySoldier (Speed, Attack, Hit y
+        /// Die) y los clips del caballero (Idle, Run, Light1 como ataque, Hit y Die), la cimitarra en la mano derecha,
+        /// el Animator asignado a EnemySoldier y las piezas de la cápsula apagadas. Repetible.
+        /// </summary>
+        [MenuItem("The Last Beat/Arte/Soldado: modelo, animaciones y cimitarra en Soldado.prefab")]
+        public static void SetupSoldier()
+        {
+            GameObject model = ImportHumanoid(SoldierModelPath, SoldierHeight);
+            GameObject scimitar = ImportStatic(ScimitarPath);
+            if (model == null || scimitar == null) return;
+            UseTexturedMaterial(SoldierModelPath, SoldierTexturePath, SoldierMaterialPath);
+            UseTexturedMaterial(ScimitarPath, ScimitarTexturePath, ScimitarMaterialPath);
+            AnimatorController controller = BuildSoldierController();
+            if (controller == null) return;
+
+            GameObject root = PrefabUtility.LoadPrefabContents(SoldierPrefabPath);
+            try
+            {
+                foreach (Transform child in root.transform.Cast<Transform>().Where(t => t.name == "Modelo_Soldado").ToArray())
+                    Object.DestroyImmediate(child.gameObject);
+
+                var instance = (GameObject)PrefabUtility.InstantiatePrefab(model, root.transform);
+                instance.name = "Modelo_Soldado";
+                Vector3 s = root.transform.localScale;
+                instance.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+                instance.transform.localScale = new Vector3(1f / s.x, 1f / s.y, 1f / s.z);
+                Animator animator = instance.GetComponent<Animator>() ?? instance.AddComponent<Animator>();
+                animator.runtimeAnimatorController = controller;
+                animator.applyRootMotion = false;
+                instance.AddComponent<AnimationEventSink>();
+
+                foreach (Transform part in root.GetComponentsInChildren<Transform>(true).Where(t => SoldierPlaceholderParts.Contains(t.name)))
+                    if (part.TryGetComponent(out MeshRenderer placeholder)) placeholder.enabled = false;
+
+                var soldier = root.GetComponent<EnemySoldier>();
+                var so = new SerializedObject(soldier);
+                so.FindProperty("animator").objectReferenceValue = animator;
+                so.ApplyModifiedPropertiesWithoutUndo();
+
+                PlaceSword(root.transform, animator, scimitar, "Cimitarra");
+                PrefabUtility.SaveAsPrefabAsset(root, SoldierPrefabPath);
+                int tris = instance.GetComponentsInChildren<SkinnedMeshRenderer>().Sum(r => r.sharedMesh.triangles.Length / 3);
+                Debug.Log($"[CharacterArtSetup] Soldado listo: {tris} triángulos, {instance.GetComponentsInChildren<Renderer>().Length} " +
+                          "renderers (cuerpo y cimitarra), Animator asignado a EnemySoldier.");
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+        }
+
+        /// <summary>Controller del soldado con los clips del caballero (Humanoid: sirven para cualquier personaje).</summary>
+        private static AnimatorController BuildSoldierController()
+        {
+            AnimationClip[] heroClips = AssetDatabase.LoadAllAssetsAtPath(HeroModelPath).OfType<AnimationClip>().ToArray();
+            AnimationClip Clip(string n) => heroClips.FirstOrDefault(c => c.name == n);
+            AnimationClip idle = Clip("Idle"), run = Clip("Run"), attack = Clip("Light1"), hit = Clip("Hit"), die = Clip("Die");
+            if (new[] { idle, run, attack, hit, die }.Any(c => c == null))
+            {
+                Debug.LogError("[CharacterArtSetup] Faltan clips en Hero.fbx (Idle, Run, Light1, Hit o Die).");
+                return null;
+            }
+
+            AnimatorController controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(SoldierControllerPath)
+                                            ?? AnimatorController.CreateAnimatorControllerAtPath(SoldierControllerPath);
+            while (controller.layers.Length > 1) controller.RemoveLayer(controller.layers.Length - 1);
+            AnimatorStateMachine machine = controller.layers[0].stateMachine;
+            foreach (ChildAnimatorState child in machine.states.ToArray()) machine.RemoveState(child.state);
+            foreach (AnimatorStateTransition any in machine.anyStateTransitions.ToArray()) machine.RemoveAnyStateTransition(any);
+            foreach (AnimatorControllerParameter p in controller.parameters.ToArray()) controller.RemoveParameter(p);
+            controller.AddParameter("Speed", AnimatorControllerParameterType.Float);
+            controller.AddParameter("Attack", AnimatorControllerParameterType.Trigger);
+            controller.AddParameter("Hit", AnimatorControllerParameterType.Trigger);
+            controller.AddParameter("Die", AnimatorControllerParameterType.Trigger);
+
+            AnimatorState Add(string name, AnimationClip clip, float x, float y)
+            {
+                AnimatorState state = machine.AddState(name, new Vector3(x, y, 0));
+                state.motion = clip;
+                return state;
+            }
+
+            AnimatorState idleState = Add("Idle", idle, 250, 0);
+            AnimatorState runState = Add("Run", run, 250, 120);
+            machine.defaultState = idleState;
+            AnimatorStateTransition t = idleState.AddTransition(runState);
+            t.hasExitTime = false; t.duration = 0.12f;
+            t.AddCondition(AnimatorConditionMode.Greater, 0.1f, "Speed");
+            t = runState.AddTransition(idleState);
+            t.hasExitTime = false; t.duration = 0.12f;
+            t.AddCondition(AnimatorConditionMode.Less, 0.1f, "Speed");
+
+            // Ataque y golpe: desde cualquier estado por trigger, y de vuelta a Idle al terminar. Morir no tiene salida:
+            // el pool hace Rebind al reutilizar el soldado.
+            foreach (var (trigger, clip, back, self) in new[] { ("Attack", attack, true, false), ("Hit", hit, true, true), ("Die", die, false, false) })
+            {
+                AnimatorState state = Add(trigger, clip, 560, trigger == "Attack" ? -60 : trigger == "Hit" ? 60 : 180);
+                AnimatorStateTransition enter = machine.AddAnyStateTransition(state);
+                enter.hasExitTime = false; enter.duration = 0.06f; enter.canTransitionToSelf = self;
+                enter.AddCondition(AnimatorConditionMode.If, 0f, trigger);
+                if (!back) continue;
+                AnimatorStateTransition exit = state.AddTransition(idleState);
+                exit.hasExitTime = true; exit.exitTime = 0.9f; exit.duration = 0.1f;
+            }
+
+            EditorUtility.SetDirty(controller);
+            AssetDatabase.SaveAssets();
+            return controller;
         }
 
         /// <summary>Importa un FBX con rig de Mixamo como Humanoid y lo escala a la altura indicada.</summary>
@@ -231,7 +362,7 @@ namespace TheLastBeat.EditorTools
             var importer = AssetImporter.GetAtPath(path) as ModelImporter;
             if (importer == null)
             {
-                Debug.LogError($"[CharacterArtSetup] No existe {path}. Genéralo con Tools/Blender/build_espadon.py.");
+                Debug.LogError($"[CharacterArtSetup] No existe {path}. Prepáralo con Tools/Blender/preparar_objeto.py.");
                 return null;
             }
 
@@ -296,7 +427,7 @@ namespace TheLastBeat.EditorTools
         /// delante y atrás (como en el héroe provisional, para el que se hicieron las animaciones). Los ejes se
         /// calculan con la malla, así no depende de cómo convierta Unity los ejes del FBX.
         /// </summary>
-        private static void PlaceSword(Transform knight, Animator animator, GameObject swordAsset)
+        private static void PlaceSword(Transform knight, Animator animator, GameObject swordAsset, string objectName = "Espadon")
         {
             Transform hand = animator.GetBoneTransform(HumanBodyBones.RightHand);
             Transform forearm = animator.GetBoneTransform(HumanBodyBones.RightLowerArm);
@@ -305,7 +436,7 @@ namespace TheLastBeat.EditorTools
             Vector3 forward = Vector3.ProjectOnPlane(knight.forward, arm).normalized;
 
             var sword = (GameObject)PrefabUtility.InstantiatePrefab(swordAsset, hand);
-            sword.name = "Espadon";
+            sword.name = objectName;
             sword.transform.localScale = Vector3.one / hand.lossyScale.x;
             sword.transform.position = Vector3.Lerp(hand.position, middle != null ? middle.position : hand.position, 0.6f);
 
@@ -321,7 +452,7 @@ namespace TheLastBeat.EditorTools
             Vector3 width = Vector3.ProjectOnPlane(Axis(ancho), arm).normalized;
             sword.transform.rotation = Quaternion.AngleAxis(Vector3.SignedAngle(width, forward, arm), arm) * sword.transform.rotation;
             Bounds world = sword.GetComponentInChildren<Renderer>().bounds;
-            Debug.Log($"[CharacterArtSetup] Espadón en la mano derecha: {world.size.magnitude:F2} m de diagonal, " +
+            Debug.Log($"[CharacterArtSetup] {objectName} en la mano derecha: {world.size.magnitude:F2} m de diagonal, " +
                       $"hoja hacia {Vector3.Dot((world.center - hand.position).normalized, arm):F2} (1 = en la línea del brazo).");
         }
         [MenuItem("The Last Beat/Arte/Caballero: reimportar Hero.fbx con golpe y muerte")]

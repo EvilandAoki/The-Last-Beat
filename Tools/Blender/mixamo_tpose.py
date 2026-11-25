@@ -1,8 +1,9 @@
 """
 Deja un personaje con rig de Mixamo en T-pose de verdad (tareas 22 a 28).
 Mixamo descarga la malla y el esqueleto en la pose original (aquí, brazos abajo) y guarda la T-pose solo como
-un clip de un cuadro; Unity crea el avatar Humanoid con la pose base, así que las animaciones saldrían con los
-brazos torcidos. Este script aplica ese cuadro como pose base de la malla y del esqueleto y exporta otra vez.
+un clip de un cuadro. Este script aplica ese cuadro como pose base de la malla y del esqueleto y exporta otra vez.
+No es imprescindible: se comprobó que Unity crea bien el avatar Humanoid con los brazos abajo (la misma
+animación deja el brazo en el mismo ángulo con las dos versiones). Solo deja el modelo en T en el editor.
 
 Uso:
   blender -b -P Tools/Blender/mixamo_tpose.py -- <descarga_de_mixamo.fbx> <salida.fbx>
