@@ -11,5 +11,13 @@ los generadores de [`Tools/Audio/`](Tools/Audio/README.md), sin samples ni graba
 | `Assets/_Project/Audio/Music/Combate_*.ogg`, `Ambiente_Pueblo.ogg` | #30 | Equipo The Last Beat (línea C) | Original del proyecto |
 | `Assets/_Project/Audio/SFX/*.wav` | #31 | Equipo The Last Beat (línea C) | Original del proyecto |
 
+## Arte
+
+| Archivos | Tarea | Origen |
+|---|---|---|
+| `Assets/_Project/Art/Models/Caballero/Caballero.fbx` y `Caballero_Color.jpg` | #22 | Modelo y textura generados con Tripo3D (plan de pago) a partir del concept art del equipo; esqueleto con el autorig de Mixamo (Adobe) |
+| `Assets/_Project/Art/Models/Caballero/Espadon.fbx` | #22 | Original del equipo, generado con `Tools/Blender/build_espadon.py` |
+| Animaciones del caballero (`Art/Models/Hero/Hero.fbx`) | #8, #25 | Originales del equipo, generadas con `Tools/Blender/build_hero.py` |
+
 Cuando se agregue audio o arte de terceros (por ejemplo, packs de Kenney o sonidos CC0 de Freesound), se anota
 aquí con su autor, su enlace y su licencia.
