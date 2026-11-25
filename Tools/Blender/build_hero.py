@@ -1,9 +1,6 @@
 """
-El caballero de The Last Beat: esqueleto Humanoid (nombres mixamorig:*), malla low-poly con pesos rígidos
-y los colores del concept art (Art/ConceptArt/Caballero.png y Caballero_Espadon.png): armadura azul con
-ribetes plateados, traje azul oscuro, pelo negro, capa y espadón azul y plata.
-Clips: Idle, Run, Spin (bucle; Unity gira el modelo), Charge (bucle; Unity desplaza al héroe), Light1, Light2,
-Heavy1, Heavy2, Hit (recibir golpe) y Die (morir). Exporta un FBX listo para Unity.
+Héroe provisional de The Last Beat: esqueleto Humanoid (nombres mixamorig:*), malla low-poly
+con pesos rígidos y clips Idle, Run, Spin (bucle; Unity gira el modelo), Charge (bucle; Unity desplaza al héroe), Light1, Light2, Heavy1, Heavy2, Hit (recibir golpe) y Die (morir). Exporta un FBX listo para Unity.
 
 Uso:
   snap run blender -b -P Tools/Blender/build_hero.py -- <salida.fbx> [--preview <carpeta>]
@@ -11,248 +8,45 @@ Uso:
 Convenciones: 1 unidad = 1 m, +Z arriba, el héroe mira hacia -Y y su izquierda es +X.
 T-pose de 1.8 m. Los clips son 30 fps, solo rotaciones en huesos (y un poco de movimiento de caderas),
 sin root motion. Los frames de impacto de cada ataque están en HIT_FRAMES (el script de editor de Unity
-los usa para crear los Animation Events).
+los usa para crear los Animation Events). El esqueleto y los helpers de animación están en rig_common.py.
 """
-import math
+import os
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import bmesh
 import bpy
-from mathutils import Euler, Matrix, Vector
+from mathutils import Vector
 
-FPS = 30
+import rig_common as rc
+from rig_common import (P, caja, clip, crear_armature, esfera, exportar, fijar_contacto, material, pies_planos,
+                        piernas, prisma, torso, _paso)
+
 HIT_FRAMES = {"Light1": 9, "Light2": 9, "Heavy1": 16, "Heavy2": 17}
-CLIP_FRAMES = {"Idle": 60, "Run": 20, "Spin": 20, "Charge": 16, "Light1": 22, "Light2": 22, "Heavy1": 34, "Heavy2": 38,
-               "Hit": 12, "Die": 40}
-
-# ----------------------------------------------------------------------------------------------
-# Esqueleto
-# ----------------------------------------------------------------------------------------------
-P = "mixamorig:"
-
-# (nombre, padre, cabeza, cola)   -- solo el lado izquierdo (+X); el derecho se espeja.
-CENTRO = [
-    ("Hips", None, (0, 0, 0.98), (0, 0, 1.05)),
-    ("Spine", "Hips", (0, 0, 1.05), (0, 0, 1.14)),
-    ("Spine1", "Spine", (0, 0, 1.14), (0, 0, 1.26)),
-    ("Spine2", "Spine1", (0, 0, 1.26), (0, 0, 1.48)),
-    ("Neck", "Spine2", (0, 0, 1.48), (0, 0, 1.58)),
-    ("Head", "Neck", (0, 0, 1.58), (0, 0, 1.78)),
-    ("HeadTop_End", "Head", (0, 0, 1.78), (0, 0, 1.83)),
-]
-
-BRAZO = [
-    ("Shoulder", "Spine2", (0.03, 0, 1.46), (0.17, 0, 1.46)),
-    ("Arm", "Shoulder", (0.17, 0, 1.46), (0.46, 0, 1.46)),
-    ("ForeArm", "Arm", (0.46, 0, 1.46), (0.72, 0, 1.46)),
-    ("Hand", "ForeArm", (0.72, 0, 1.46), (0.80, 0, 1.46)),
-]
-
-DEDOS = {  # nombre: (desplazamiento en Y, longitudes de las 4 falanges)
-    "Thumb": (-0.035, (0.035, 0.030, 0.025, 0.020)),
-    "Index": (-0.025, (0.040, 0.025, 0.020, 0.015)),
-    "Middle": (-0.005, (0.045, 0.028, 0.022, 0.015)),
-    "Ring": (0.015, (0.040, 0.025, 0.020, 0.015)),
-    "Pinky": (0.032, (0.032, 0.020, 0.015, 0.012)),
-}
-
-PIERNA = [
-    ("UpLeg", "Hips", (0.09, 0, 0.98), (0.09, 0, 0.54)),
-    ("Leg", "UpLeg", (0.09, 0, 0.54), (0.09, 0, 0.10)),
-    ("Foot", "Leg", (0.09, 0, 0.10), (0.09, -0.12, 0.035)),
-    ("ToeBase", "Foot", (0.09, -0.12, 0.035), (0.09, -0.21, 0.02)),
-    ("Toe_End", "ToeBase", (0.09, -0.21, 0.02), (0.09, -0.25, 0.02)),
-]
-
-
-def espejo(v):
-    return (-v[0], v[1], v[2])
-
-
-def definir_huesos():
-    huesos = []  # (nombre completo, padre completo, cabeza, cola)
-    for n, p, h, t in CENTRO:
-        huesos.append((P + n, P + p if p else None, h, t))
-    for lado, signo in (("Left", 1), ("Right", -1)):
-        f = (lambda v: v) if signo == 1 else espejo
-        for n, p, h, t in BRAZO:
-            padre = P + (p if p == "Spine2" else lado + p)
-            huesos.append((P + lado + n, padre, f(h), f(t)))
-        mano_cola = BRAZO[-1][3]
-        for dedo, (dy, largos) in DEDOS.items():
-            x = mano_cola[0]
-            anterior = P + lado + "Hand"
-            for i, largo in enumerate(largos, start=1):
-                cabeza = (x, mano_cola[1] + dy, mano_cola[2])
-                cola = (x + largo, mano_cola[1] + dy, mano_cola[2])
-                nombre = P + lado + "Hand" + dedo + str(i)
-                huesos.append((nombre, anterior, f(cabeza), f(cola)))
-                anterior = nombre
-                x += largo
-        for n, p, h, t in PIERNA:
-            padre = P + (p if p == "Hips" else lado + p)
-            huesos.append((P + lado + n, padre, f(h), f(t)))
-    return huesos
-
-
-def crear_armature():
-    arm_data = bpy.data.armatures.new("Armature")
-    arm = bpy.data.objects.new("Armature", arm_data)
-    bpy.context.scene.collection.objects.link(arm)
-    bpy.context.view_layer.objects.active = arm
-    arm.select_set(True)
-    bpy.ops.object.mode_set(mode="EDIT")
-    for nombre, padre, cabeza, cola in definir_huesos():
-        eb = arm_data.edit_bones.new(nombre)
-        eb.head = Vector(cabeza)
-        eb.tail = Vector(cola)
-        eb.roll = 0.0
-        if padre:
-            eb.parent = arm_data.edit_bones[padre]
-            eb.use_connect = False
-    bpy.ops.object.mode_set(mode="OBJECT")
-    return arm
-
-
-# ----------------------------------------------------------------------------------------------
-# Malla (piezas rígidas pesadas al 100 % a su hueso)
-# ----------------------------------------------------------------------------------------------
-def hex_lineal(h):
-    """'#2e47ae' -> color lineal RGBA (Blender guarda los colores en espacio lineal)."""
-    def canal(c):
-        c /= 255.0
-        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
-    return (canal(int(h[1:3], 16)), canal(int(h[3:5], 16)), canal(int(h[5:7], 16)), 1.0)
-
-
-# Colores medidos en el concept art del caballero.
-COLORES = {
-    "HeroArmor": hex_lineal("#2e47ae"),   # armadura azul
-    "HeroTrim": hex_lineal("#cfcbd2"),    # ribetes, hebilla y filos plateados
-    "HeroSuit": hex_lineal("#23253a"),    # traje y guantes azul oscuro
-    "HeroSkin": hex_lineal("#f0caa8"),
-    "HeroHair": hex_lineal("#16171f"),    # pelo y ojos
-    "HeroCape": hex_lineal("#1d2c78"),    # capa, un tono más oscuro que la armadura
-}
-
-
-def material(nombre):
-    m = bpy.data.materials.get(nombre)
-    if m is None:
-        m = bpy.data.materials.new(nombre)
-        m.use_nodes = True
-        bsdf = m.node_tree.nodes.get("Principled BSDF")
-        bsdf.inputs["Base Color"].default_value = COLORES[nombre]
-        bsdf.inputs["Roughness"].default_value = 0.6
-        m.diffuse_color = COLORES[nombre]
-    return m
-
-
-def prisma(bm, p0, p1, r0, r1, lados=8):
-    """Tubo cónico de sección elíptica entre dos puntos. r = (radio_x, radio_y) en el plano perpendicular."""
-    p0, p1 = Vector(p0), Vector(p1)
-    eje = (p1 - p0).normalized()
-    ref = Vector((0, 1, 0)) if abs(eje.y) < 0.9 else Vector((1, 0, 0))
-    u = eje.cross(ref).normalized()
-    v = eje.cross(u).normalized()
-    anillos = []
-    for p, r in ((p0, r0), (p1, r1)):
-        rx, ry = (r, r) if isinstance(r, (int, float)) else r
-        anillo = []
-        for i in range(lados):
-            a = 2 * math.pi * i / lados
-            anillo.append(bm.verts.new(p + u * (math.cos(a) * rx) + v * (math.sin(a) * ry)))
-        anillos.append(anillo)
-    for i in range(lados):
-        j = (i + 1) % lados
-        bm.faces.new((anillos[0][i], anillos[0][j], anillos[1][j], anillos[1][i]))
-    bm.faces.new(anillos[0][::-1])
-    bm.faces.new(anillos[1])
-
-
-def caja(bm, centro, tam):
-    m = Matrix.Translation(Vector(centro))
-    bmesh.ops.create_cube(bm, size=1.0, matrix=m @ Matrix.Diagonal((tam[0], tam[1], tam[2], 1.0)))
-
-
-def esfera(bm, centro, radios):
-    m = Matrix.Translation(Vector(centro)) @ Matrix.Diagonal((radios[0], radios[1], radios[2], 1.0))
-    bmesh.ops.create_uvsphere(bm, u_segments=8, v_segments=6, radius=1.0, matrix=m)
-
-
-def cono(bm, base, punta, r, lados=5):
-    """Punta (mechones de pelo, filo del espadón): un prisma que se cierra casi en un punto."""
-    prisma(bm, base, punta, r, 0.002, lados)
-
-
-def placa(bm, a, b, c, d, grosor):
-    """Lámina con grosor entre cuatro esquinas: a-b arriba, c-d abajo (capa, faldones)."""
-    a, b, c, d = Vector(a), Vector(b), Vector(c), Vector(d)
-    n = (b - a).cross(c - a).normalized() * (grosor / 2)
-    delante = [bm.verts.new(p - n) for p in (a, b, d, c)]
-    detras = [bm.verts.new(p + n) for p in (a, b, d, c)]
-    bm.faces.new(delante)
-    bm.faces.new(detras[::-1])
-    for i in range(4):
-        j = (i + 1) % 4
-        bm.faces.new((delante[i], detras[i], detras[j], delante[j]))
-
-
-def con_ribete(a, b, c, d, grosor, borde, mat_pieza, mat_ribete, add, hueso):
-    """Placa de armadura con un borde plateado: una placa un poco mayor detrás asoma como ribete."""
-    a, b, c, d = Vector(a), Vector(b), Vector(c), Vector(d)
-    centro = (a + b + c + d) / 4
-    n = (b - a).cross(c - a).normalized()
-    if n.y < 0:  # el ribete va siempre por detrás (hacia el cuerpo), también en el lado espejado
-        n = -n
-    crecer = lambda p: centro + (p - centro) * (1 + borde) + n * grosor * 0.6
-    add(hueso, mat_ribete, lambda bm: placa(bm, crecer(a), crecer(b), crecer(c), crecer(d), grosor))
-    add(hueso, mat_pieza, lambda bm: placa(bm, a, b, c, d, grosor))
-
+rc.CLIP_FRAMES.update({"Idle": 60, "Run": 20, "Spin": 20, "Charge": 16, "Light1": 22, "Light2": 22, "Heavy1": 34, "Heavy2": 38,
+                       "Hit": 12, "Die": 40})
+COLORES = rc.COLORES
+COLORES.update({
+    "HeroArmor": (0.45, 0.50, 0.58, 1.0),
+    "HeroCloth": (0.42, 0.10, 0.12, 1.0),
+    "HeroSkin": (0.78, 0.58, 0.46, 1.0),
+    "HeroSword": (0.80, 0.82, 0.86, 1.0),
+})
 
 def piezas():
-    """(hueso, material, función(bm) que dibuja la pieza) del centro del cuerpo."""
+    """(hueso, material, función(bm) que dibuja la pieza). Solo lado izquierdo; se espeja con 'lado'."""
     L = []
 
     def add(hueso, mat, fn):
         L.append((hueso, mat, fn))
 
-    # Cadera, cinturón y faldón frontal en punta (con ribete plateado)
-    add("Hips", "HeroSuit", lambda bm: prisma(bm, (0, 0, 0.90), (0, 0, 1.07), (0.165, 0.11), (0.16, 0.10)))
-    add("Hips", "HeroSuit", lambda bm: prisma(bm, (0, 0, 1.02), (0, 0, 1.08), (0.172, 0.116), (0.172, 0.116)))
-    add("Hips", "HeroTrim", lambda bm: caja(bm, (0, -0.12, 1.05), (0.08, 0.02, 0.055)))   # hebilla
-    con_ribete((-0.10, -0.118, 1.02), (0.10, -0.118, 1.02), (-0.035, -0.135, 0.74), (0.035, -0.135, 0.74),
-               0.016, 0.12, "HeroArmor", "HeroTrim", add, "Hips")
-    # Torso: abdomen y pecho azules, línea plateada bajo el pecho y la estrella del pecho
-    add("Spine1", "HeroArmor", lambda bm: prisma(bm, (0, 0, 1.07), (0, 0, 1.25), (0.15, 0.10), (0.155, 0.10)))
-    add("Spine2", "HeroTrim", lambda bm: prisma(bm, (0, 0, 1.24), (0, 0, 1.265), (0.19, 0.125), (0.19, 0.125)))
-    add("Spine2", "HeroArmor", lambda bm: prisma(bm, (0, 0, 1.265), (0, 0, 1.47), (0.19, 0.122), (0.205, 0.125)))
-    add("Spine2", "HeroTrim", lambda bm: caja(bm, (0, -0.128, 1.36), (0.022, 0.012, 0.13)))
-    add("Spine2", "HeroTrim", lambda bm: caja(bm, (0, -0.128, 1.38), (0.08, 0.012, 0.022)))
-    # Cuello alto de la armadura
-    add("Spine2", "HeroArmor", lambda bm: prisma(bm, (0, 0, 1.46), (0, 0, 1.56), (0.085, 0.078), (0.075, 0.07)))
-    add("Spine2", "HeroTrim", lambda bm: prisma(bm, (0, 0, 1.555), (0, 0, 1.57), (0.077, 0.072), (0.077, 0.072)))
-    add("Neck", "HeroSkin", lambda bm: prisma(bm, (0, 0, 1.49), (0, 0, 1.61), 0.048, 0.048))
-    # Cabeza: cara, nariz (marca el frente), ojos y pelo negro en punta
-    add("Head", "HeroSkin", lambda bm: esfera(bm, (0, 0, 1.69), (0.095, 0.105, 0.115)))
-    add("Head", "HeroSkin", lambda bm: caja(bm, (0, -0.105, 1.68), (0.022, 0.03, 0.035)))
-    for sx in (-1, 1):
-        add("Head", "HeroHair", lambda bm, sx=sx: caja(bm, (0.036 * sx, -0.097, 1.705), (0.03, 0.012, 0.022)))
-    add("Head", "HeroHair", lambda bm: esfera(bm, (0, 0.03, 1.74), (0.106, 0.106, 0.10)))
-    mechones = [  # (base, punta, radio)
-        ((0, 0.05, 1.80), (0, 0.15, 1.88), 0.045), ((0.06, 0.03, 1.80), (0.13, 0.08, 1.87), 0.04),
-        ((-0.06, 0.03, 1.80), (-0.13, 0.08, 1.87), 0.04), ((0, -0.02, 1.82), (0.01, -0.03, 1.91), 0.04),
-        ((0.08, 0.0, 1.76), (0.15, 0.02, 1.74), 0.035), ((-0.08, 0.0, 1.76), (-0.15, 0.02, 1.74), 0.035),
-        ((0.04, -0.06, 1.79), (0.06, -0.115, 1.72), 0.03), ((-0.04, -0.06, 1.79), (-0.05, -0.115, 1.72), 0.03),
-        ((0, -0.07, 1.80), (0.0, -0.12, 1.745), 0.028), ((0, 0.09, 1.72), (0, 0.15, 1.64), 0.045),
-    ]
-    for base, punta, r in mechones:
-        add("Head", "HeroHair", lambda bm, b=base, p=punta, r=r: cono(bm, b, p, r))
-    # Capa: de los hombros a la cintura con el pecho, y de la cintura a las corvas con la cadera
-    add("Spine2", "HeroCape", lambda bm: placa(bm, (-0.17, 0.128, 1.47), (0.17, 0.128, 1.47),
-                                                (-0.21, 0.17, 1.06), (0.21, 0.17, 1.06), 0.02))
-    add("Hips", "HeroCape", lambda bm: placa(bm, (-0.21, 0.17, 1.065), (0.21, 0.17, 1.065),
-                                              (-0.25, 0.30, 0.50), (0.25, 0.30, 0.50), 0.02))
+    add("Hips", "HeroCloth", lambda bm: prisma(bm, (0, 0, 0.92), (0, 0, 1.08), (0.17, 0.11), (0.16, 0.10)))
+    add("Spine1", "HeroArmor", lambda bm: prisma(bm, (0, 0, 1.08), (0, 0, 1.25), (0.15, 0.10), (0.15, 0.10)))
+    add("Spine2", "HeroArmor", lambda bm: prisma(bm, (0, 0, 1.25), (0, 0, 1.49), (0.19, 0.12), (0.21, 0.12)))
+    add("Neck", "HeroSkin", lambda bm: prisma(bm, (0, 0, 1.49), (0, 0, 1.60), 0.05, 0.05))
+    add("Head", "HeroSkin", lambda bm: esfera(bm, (0, 0, 1.69), (0.095, 0.11, 0.115)))
+    add("Head", "HeroSkin", lambda bm: caja(bm, (0, -0.115, 1.68), (0.03, 0.04, 0.05)))  # nariz: marca el frente
     return L
 
 
@@ -265,48 +59,27 @@ def piezas_lado(lado, s):
     def add(hueso, mat, fn):
         L.append((P + lado + hueso, mat, fn))
 
-    # Hombrera redonda con borde plateado
-    add("Shoulder", "HeroArmor", lambda bm: esfera(bm, x((0.205, 0, 1.50)), (0.095, 0.10, 0.075)))
-    add("Shoulder", "HeroTrim", lambda bm: caja(bm, x((0.22, 0, 1.452)), (0.14, 0.17, 0.022)))
-    add("Shoulder", "HeroTrim", lambda bm: esfera(bm, x((0.20, -0.085, 1.525)), (0.022, 0.018, 0.022)))
-    # Brazo: traje oscuro, brazal azul entre dos aros plateados, guante oscuro y dedos al aire
-    add("Arm", "HeroSuit", lambda bm: prisma(bm, x((0.17, 0, 1.46)), x((0.46, 0, 1.46)), 0.05, 0.042))
-    add("ForeArm", "HeroTrim", lambda bm: prisma(bm, x((0.465, 0, 1.46)), x((0.49, 0, 1.46)), 0.054, 0.054))
-    add("ForeArm", "HeroArmor", lambda bm: prisma(bm, x((0.49, 0, 1.46)), x((0.69, 0, 1.46)), 0.052, 0.046))
-    add("ForeArm", "HeroTrim", lambda bm: prisma(bm, x((0.69, 0, 1.46)), x((0.715, 0, 1.46)), 0.05, 0.05))
-    add("Hand", "HeroSuit", lambda bm: caja(bm, x((0.765, 0, 1.46)), (0.08, 0.045, 0.09)))
-    add("Hand", "HeroSkin", lambda bm: caja(bm, x((0.82, 0, 1.46)), (0.035, 0.035, 0.08)))
-    # Faldón lateral con ribete
-    con_ribete(x((0.105, -0.10, 1.00)), x((0.175, -0.06, 1.00)), x((0.115, -0.125, 0.82)), x((0.195, -0.08, 0.82)),
-               0.014, 0.14, "HeroArmor", "HeroTrim", lambda h, m, f: L.append((P + h, m, f)), "Hips")
-    # Pierna: muslo oscuro, rodillera, greba azul con aro plateado y bota con puntera plateada
-    add("UpLeg", "HeroSuit", lambda bm: prisma(bm, x((0.09, 0, 0.98)), x((0.09, 0, 0.56)), 0.085, 0.065))
-    add("Leg", "HeroArmor", lambda bm: caja(bm, x((0.09, -0.058, 0.55)), (0.10, 0.04, 0.11)))
-    add("Leg", "HeroTrim", lambda bm: caja(bm, x((0.09, -0.082, 0.55)), (0.04, 0.018, 0.065)))
-    add("Leg", "HeroArmor", lambda bm: prisma(bm, x((0.09, 0, 0.54)), x((0.09, 0, 0.12)), 0.065, 0.05))
-    add("Leg", "HeroTrim", lambda bm: prisma(bm, x((0.09, 0, 0.13)), x((0.09, 0, 0.16)), 0.058, 0.058))
-    add("Foot", "HeroArmor", lambda bm: caja(bm, x((0.09, -0.07, 0.045)), (0.095, 0.24, 0.09)))
-    add("Foot", "HeroTrim", lambda bm: caja(bm, x((0.09, -0.165, 0.04)), (0.10, 0.06, 0.08)))
+    add("Shoulder", "HeroArmor", lambda bm: caja(bm, x((0.17, 0, 1.49)), (0.13, 0.15, 0.10)))
+    add("Arm", "HeroCloth", lambda bm: prisma(bm, x((0.17, 0, 1.46)), x((0.46, 0, 1.46)), 0.05, 0.04))
+    add("ForeArm", "HeroArmor", lambda bm: prisma(bm, x((0.46, 0, 1.46)), x((0.72, 0, 1.46)), 0.045, 0.035))
+    add("Hand", "HeroSkin", lambda bm: caja(bm, x((0.77, 0, 1.46)), (0.09, 0.04, 0.09)))
+    add("UpLeg", "HeroCloth", lambda bm: prisma(bm, x((0.09, 0, 0.98)), x((0.09, 0, 0.54)), 0.085, 0.065))
+    add("Leg", "HeroArmor", lambda bm: prisma(bm, x((0.09, 0, 0.54)), x((0.09, 0, 0.10)), 0.062, 0.045))
+    add("Foot", "HeroArmor", lambda bm: caja(bm, x((0.09, -0.07, 0.045)), (0.09, 0.24, 0.09)))
     return L
 
 
 def espadon():
-    """Empuñadura en la mano derecha; hoja en la prolongación del antebrazo (-X en T-pose).
-    Como en el concept art: hoja azul con filos plateados, guarda plateada con gema azul y pomo plateado."""
+    """Empuñadura en la mano derecha; hoja en la prolongación del antebrazo (-X en T-pose)."""
     L = []
     mano = P + "RightHand"
 
     def add(mat, fn):
         L.append((mano, mat, fn))
 
-    add("HeroSuit", lambda bm: prisma(bm, (-0.76, 0, 1.46), (-0.89, 0, 1.46), 0.021, 0.021))       # empuñadura
-    add("HeroTrim", lambda bm: esfera(bm, (-0.745, 0, 1.46), (0.028, 0.028, 0.028)))                # pomo
-    add("HeroTrim", lambda bm: caja(bm, (-0.90, 0, 1.46), (0.035, 0.22, 0.04)))                    # guarda
-    add("HeroArmor", lambda bm: caja(bm, (-0.905, 0, 1.46), (0.045, 0.05, 0.05)))                  # gema
-    add("HeroArmor", lambda bm: caja(bm, (-1.38, 0, 1.46), (0.92, 0.085, 0.018)))                  # hoja
-    for sy in (-1, 1):
-        add("HeroTrim", lambda bm, sy=sy: caja(bm, (-1.38, 0.0525 * sy, 1.46), (0.92, 0.02, 0.012)))  # filos
-    add("HeroTrim", lambda bm: prisma(bm, (-1.84, 0, 1.46), (-1.98, 0, 1.46), (0.009, 0.0625), 0.002, 4))  # punta
+    add("HeroCloth", lambda bm: prisma(bm, (-0.78, 0, 1.46), (-0.89, 0, 1.46), 0.022, 0.022))
+    add("HeroSword", lambda bm: caja(bm, (-0.90, 0, 1.46), (0.03, 0.16, 0.035)))  # guarda
+    add("HeroSword", lambda bm: caja(bm, (-1.42, 0, 1.46), (1.04, 0.075, 0.014)))  # hoja
     return L
 
 
@@ -359,79 +132,6 @@ def crear_malla(arm):
     return obj
 
 
-# ----------------------------------------------------------------------------------------------
-# Animación (FK en ejes del mundo en reposo; ver docstring de rotar)
-# ----------------------------------------------------------------------------------------------
-def R(eje, grados):
-    return Matrix.Rotation(math.radians(grados), 3, eje)
-
-
-def combinar(ops):
-    """ops = [('Y', 65), ('Z', -20)]  → primero Y, luego Z, ambos en ejes del mundo en reposo."""
-    m = Matrix.Identity(3)
-    for eje, grados in ops:
-        m = R(eje, grados) @ m
-    return m
-
-
-REST_CONTACT = 0.0
-FOOT_BONES = ("Foot", "ToeBase", "Toe_End")
-
-
-def contacto(arm):
-    """Altura del punto más bajo de los pies (talón o punta), en el espacio de la armature."""
-    bajo = 1e9
-    for lado in ("Left", "Right"):
-        foot = arm.pose.bones[P + lado + "Foot"].head.z - 0.075
-        toe = arm.pose.bones[P + lado + "ToeBase"].head.z
-        end = arm.pose.bones[P + lado + "Toe_End"].head.z
-        bajo = min(bajo, foot, toe, end)
-    return bajo
-
-
-def pies_planos(pose):
-    """Mantiene las plantas paralelas al suelo: compensa el cabeceo del muslo y la pantorrilla."""
-    for lado in ("Left", "Right"):
-        cabeceo = 0.0
-        for hueso in ("UpLeg", "Leg"):
-            for eje, grados in pose.get(lado + hueso, []):
-                if eje == "X":
-                    cabeceo += grados
-        pose[lado + "Foot"] = [("X", -cabeceo)]
-    return pose
-
-
-def aplicar_pose(arm, pose, frame, suelo=True):
-    """
-    pose: {hueso_sin_prefijo: ops, 'Hips.loc': (dx, dy, dz)}. Los no listados vuelven a reposo.
-    Con suelo=True las caderas suben o bajan para que el pie más bajo toque el suelo (sin flotar ni hundirse).
-    """
-    for pb in arm.pose.bones:
-        corto = pb.name[len(P):]
-        rot_reposo = pb.bone.matrix_local.to_3x3()
-        spec = pose.get(corto)
-        pb.rotation_mode = "QUATERNION"
-        if spec is None:
-            pb.rotation_quaternion = (1, 0, 0, 0)
-        else:
-            rot = combinar(spec)
-            pb.rotation_quaternion = (rot_reposo.inverted() @ rot @ rot_reposo).to_quaternion()
-        pb.location = (0, 0, 0)
-
-    hips = arm.pose.bones[P + "Hips"]
-    rot_hips = hips.bone.matrix_local.to_3x3()
-    desp = Vector(pose.get("Hips.loc", (0, 0, 0)))
-    hips.location = rot_hips.inverted() @ desp
-    if suelo:
-        bpy.context.view_layer.update()
-        desp.z += REST_CONTACT - contacto(arm)
-        hips.location = rot_hips.inverted() @ desp
-
-    for pb in arm.pose.bones:
-        pb.keyframe_insert("rotation_quaternion", frame=frame)
-    hips.keyframe_insert("location", frame=frame)
-
-
 # Postura base: brazos abajo, espadón en alto hacia delante, rodillas ligeras.
 def base(**extra):
     p = {
@@ -442,45 +142,6 @@ def base(**extra):
         "LeftLeg": [("X", 6)], "RightLeg": [("X", 6)],
     }
     p.update(extra)
-    return p
-
-
-def nueva_accion(arm, nombre, frames):
-    accion = bpy.data.actions.new(nombre)
-    accion.use_fake_user = True
-    if arm.animation_data is None:
-        arm.animation_data_create()
-    arm.animation_data.action = accion
-    accion.use_frame_range = True
-    accion.frame_start, accion.frame_end = 0, frames
-    return accion
-
-
-def clip(arm, nombre, claves, suelo=True):
-    frames = CLIP_FRAMES[nombre]
-    nueva_accion(arm, nombre, frames)
-    for frame, pose in claves:
-        aplicar_pose(arm, pose, frame, suelo)
-
-
-def torso(giro=0.0, inclina=0.0):
-    """Giro e inclinación repartidos: el pecho gira más que la cintura, así el cuerpo 'late' tras las caderas."""
-    return {
-        "Spine": [("Z", giro * 0.2), ("X", inclina * 0.25)],
-        "Spine1": [("Z", giro * 0.3), ("X", inclina * 0.3)],
-        "Spine2": [("Z", giro * 0.5), ("X", inclina * 0.45)],
-        "Neck": [("Z", -giro * 0.15)],
-        "Head": [("Z", -giro * 0.2), ("X", -inclina * 0.3)],
-    }
-
-
-def piernas(p, lado, paso, yaw):
-    """Apoyo: la pierna 'lado' ('L' o 'R') avanza con el paso (0 a 1); la otra queda atrás. Pies planos."""
-    adel, atras = ("Left", "Right") if lado == "L" else ("Right", "Left")
-    p[adel + "UpLeg"] = [("X", -4 - 36 * paso), ("Z", -yaw * 0.9)]
-    p[adel + "Leg"] = [("X", 6 + 42 * paso)]
-    p[atras + "UpLeg"] = [("X", 4 + 14 * paso), ("Z", -yaw * 0.9)]
-    p[atras + "Leg"] = [("X", 6 + 14 * paso)]
     return p
 
 
@@ -498,7 +159,6 @@ def golpe(giro=0, yaw=0, inclina=0, paso=0, lado="L", brazo=None, codo=0, mano=N
 
 
 def crear_clips(arm):
-    global REST_CONTACT
     # --- Idle (60 f): respiración suave y balanceo del arma
     def idle(resp, sway):
         p = base(**torso(0, 1.5 * resp))
@@ -647,109 +307,31 @@ def crear_clips(arm):
 
     tendido = caida(muslo=0, pierna=4, pie=88, tronco=0, frente=88, baja=0.79, avance=0.55, brazos=15, codo=0)
 
-    nueva_accion(arm, "Die", CLIP_FRAMES["Die"])
-    aplicar_pose(arm, reposo, 0, suelo=True)
-    aplicar_pose(arm, retroceso(1.2), 5, suelo=True)
+    rc.nueva_accion(arm, "Die", rc.CLIP_FRAMES["Die"])
+    rc.aplicar_pose(arm, reposo, 0, suelo=True)
+    rc.aplicar_pose(arm, retroceso(1.2), 5, suelo=True)
     # agachado sobre la punta de los pies: la rodilla baja sin que la punta del pie barra el suelo
-    aplicar_pose(arm, caida(muslo=-40, pierna=80, pie=50, tronco=15, frente=0, baja=0.11, avance=0.0, brazos=70), 10, suelo=False)
+    rc.aplicar_pose(arm, caida(muslo=-40, pierna=80, pie=50, tronco=15, frente=0, baja=0.11, avance=0.0, brazos=70), 10, suelo=False)
     # de rodillas: muslo vertical, espinilla en el suelo, cadera a 0,52 m
-    aplicar_pose(arm, caida(muslo=0, pierna=88, pie=92, tronco=22, frente=0, baja=0.46, avance=0.0, brazos=78), 16, suelo=False)
+    rc.aplicar_pose(arm, caida(muslo=0, pierna=88, pie=92, tronco=22, frente=0, baja=0.46, avance=0.0, brazos=78), 16, suelo=False)
     # cayendo: muslo a 25°, rodilla a 8 cm del suelo
-    aplicar_pose(arm, caida(muslo=-30, pierna=70, pie=85, tronco=10, frente=55, baja=0.50, avance=0.2, brazos=60), 26, suelo=False)
-    aplicar_pose(arm, tendido, 33, suelo=False)
-    aplicar_pose(arm, tendido, 40, suelo=False)
+    rc.aplicar_pose(arm, caida(muslo=-30, pierna=70, pie=85, tronco=10, frente=55, baja=0.50, avance=0.2, brazos=60), 26, suelo=False)
+    rc.aplicar_pose(arm, tendido, 33, suelo=False)
+    rc.aplicar_pose(arm, tendido, 40, suelo=False)
 
 
-def _paso(a, b, t):
-    """Pose intermedia (paso medio): interpola ángulos de dos poses de zancada y levanta la pierna libre."""
-    p = {}
-    claves = set(a) | set(b)
-    for k in claves:
-        va, vb = a.get(k), b.get(k)
-        if k.endswith(".loc") or va is None or vb is None:
-            p[k] = va if va is not None else vb
-            continue
-        ops = []
-        for (ea, ga), (eb, gb) in zip(va, vb):
-            ops.append((ea, ga + (gb - ga) * t))
-        p[k] = ops
-    p["Hips.loc"] = (0, 0, 0.035)
-    return p
-
-
-# ----------------------------------------------------------------------------------------------
-# Exportación y vista previa
-# ----------------------------------------------------------------------------------------------
-def exportar(ruta):
-    bpy.ops.object.select_all(action="DESELECT")
-    for o in bpy.data.objects:
-        if o.type in {"ARMATURE", "MESH"}:
-            o.select_set(True)
-    bpy.ops.export_scene.fbx(
-        filepath=ruta,
-        use_selection=True,
-        object_types={"ARMATURE", "MESH"},
-        add_leaf_bones=False,
-        bake_anim=True,
-        bake_anim_use_all_actions=True,
-        bake_anim_use_nla_strips=False,
-        bake_anim_simplify_factor=0.0,
-        bake_anim_force_startend_keying=True,
-        axis_forward="-Z",
-        axis_up="Y",
-        apply_scale_options="FBX_SCALE_UNITS",
-        primary_bone_axis="Y",
-        secondary_bone_axis="X",
-        mesh_smooth_type="FACE",
-    )
-
-
-def vista_previa(arm, carpeta):
-    import os
-
-    os.makedirs(carpeta, exist_ok=True)
-    sc = bpy.context.scene
-    sc.render.engine = "BLENDER_WORKBENCH"
-    sc.display.shading.light = "STUDIO"
-    sc.display.shading.color_type = "MATERIAL"
-    sc.render.resolution_x, sc.render.resolution_y = 360, 480
-    sc.render.film_transparent = False
-    sc.world = bpy.data.worlds.new("w")
-    sc.world.color = (0.18, 0.2, 0.24)
-    cam = bpy.data.objects.new("cam", bpy.data.cameras.new("cam"))
-    bpy.context.scene.collection.objects.link(cam)
-    sc.camera = cam
-    cam.data.type = "ORTHO"
-    cam.data.ortho_scale = 3.0
-
-    def camara(frontal):
-        if frontal:  # 3/4 frontal derecha
-            cam.location = (-2.4, -3.6, 1.2)
-        else:        # lateral derecha
-            cam.location = (-4.5, 0.0, 1.2)
-        direccion = Vector((0, 0, 0.95)) - cam.location
-        cam.rotation_euler = direccion.to_track_quat("-Z", "Y").to_euler()
-
-    muestras = {
-        "Idle": [0, 30],
-        "Run": [0, 5, 10, 15],
-        "Spin": [0, 5, 15],
-        "Charge": [0, 4, 8],
-        "Light1": [0, 6, 9, 13],
-        "Light2": [0, 6, 9, 13],
-        "Heavy1": [0, 12, 16, 20],
-        "Heavy2": [0, 6, 17, 22],
-        "Hit": [3],
-        "Die": [16, 26, 40],
-    }
-    for nombre, frames in muestras.items():
-        arm.animation_data.action = bpy.data.actions[nombre]
-        for f in frames:
-            sc.frame_set(f)
-            for lado in (True, False):
-                camara(lado)
-                sc.render.filepath = os.path.join(carpeta, f"{nombre}_{f:02d}_{'3q' if lado else 'side'}.png")
-                bpy.ops.render.render(write_still=True)
+MUESTRAS = {
+    "Idle": [0, 30],
+    "Run": [0, 5, 10, 15],
+    "Spin": [0, 5, 15],
+    "Charge": [0, 4, 8],
+    "Light1": [0, 6, 9, 13],
+    "Light2": [0, 6, 9, 13],
+    "Heavy1": [0, 12, 16, 20],
+    "Heavy2": [0, 6, 17, 22],
+    "Hit": [3],
+    "Die": [16, 26, 40],
+}
 
 
 def main():
@@ -763,15 +345,13 @@ def main():
     sc = bpy.context.scene
     sc.unit_settings.system = "METRIC"
     sc.unit_settings.scale_length = 1.0
-    sc.render.fps = FPS
+    sc.render.fps = rc.FPS
 
     arm = crear_armature()
     crear_malla(arm)
     bpy.context.view_layer.objects.active = arm
     bpy.ops.object.mode_set(mode="POSE")
-    global REST_CONTACT
-    bpy.context.view_layer.update()
-    REST_CONTACT = contacto(arm)
+    fijar_contacto(arm)
     crear_clips(arm)
     bpy.ops.object.mode_set(mode="OBJECT")
 
@@ -781,9 +361,8 @@ def main():
     exportar(salida)
     print(f"RES exportado {salida}")
     if preview:
-        vista_previa(arm, preview)
+        rc.vista_previa(arm, preview, MUESTRAS)
         print(f"RES vista previa en {preview}")
 
 
-if __name__ == "__main__":  # así los scripts de la bardo y el soldado pueden reutilizar las piezas y las poses
-    main()
+main()
