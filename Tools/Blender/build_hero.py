@@ -1,6 +1,9 @@
 """
-Héroe provisional de The Last Beat: esqueleto Humanoid (nombres mixamorig:*), malla low-poly
-con pesos rígidos y clips Idle, Run, Spin (bucle; Unity gira el modelo), Charge (bucle; Unity desplaza al héroe), Light1, Light2, Heavy1 y Heavy2. Exporta un FBX listo para Unity.
+El caballero de The Last Beat: esqueleto Humanoid (nombres mixamorig:*), malla low-poly con pesos rígidos
+y los colores del concept art (Art/ConceptArt/Caballero.png y Caballero_Espadon.png): armadura azul con
+ribetes plateados, traje azul oscuro, pelo negro, capa y espadón azul y plata.
+Clips: Idle, Run, Spin (bucle; Unity gira el modelo), Charge (bucle; Unity desplaza al héroe), Light1, Light2,
+Heavy1, Heavy2, Hit (recibir golpe) y Die (morir). Exporta un FBX listo para Unity.
 
 Uso:
   snap run blender -b -P Tools/Blender/build_hero.py -- <salida.fbx> [--preview <carpeta>]
@@ -19,7 +22,8 @@ from mathutils import Euler, Matrix, Vector
 
 FPS = 30
 HIT_FRAMES = {"Light1": 9, "Light2": 9, "Heavy1": 16, "Heavy2": 17}
-CLIP_FRAMES = {"Idle": 60, "Run": 20, "Spin": 20, "Charge": 16, "Light1": 22, "Light2": 22, "Heavy1": 34, "Heavy2": 38}
+CLIP_FRAMES = {"Idle": 60, "Run": 20, "Spin": 20, "Charge": 16, "Light1": 22, "Light2": 22, "Heavy1": 34, "Heavy2": 38,
+               "Hit": 12, "Die": 40}
 
 # ----------------------------------------------------------------------------------------------
 # Esqueleto
@@ -111,13 +115,24 @@ def crear_armature():
 
 
 # ----------------------------------------------------------------------------------------------
-# Malla provisional (piezas rígidas pesadas al 100 % a su hueso)
+# Malla (piezas rígidas pesadas al 100 % a su hueso)
 # ----------------------------------------------------------------------------------------------
+def hex_lineal(h):
+    """'#2e47ae' -> color lineal RGBA (Blender guarda los colores en espacio lineal)."""
+    def canal(c):
+        c /= 255.0
+        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+    return (canal(int(h[1:3], 16)), canal(int(h[3:5], 16)), canal(int(h[5:7], 16)), 1.0)
+
+
+# Colores medidos en el concept art del caballero.
 COLORES = {
-    "HeroArmor": (0.45, 0.50, 0.58, 1.0),
-    "HeroCloth": (0.42, 0.10, 0.12, 1.0),
-    "HeroSkin": (0.78, 0.58, 0.46, 1.0),
-    "HeroSword": (0.80, 0.82, 0.86, 1.0),
+    "HeroArmor": hex_lineal("#2e47ae"),   # armadura azul
+    "HeroTrim": hex_lineal("#cfcbd2"),    # ribetes, hebilla y filos plateados
+    "HeroSuit": hex_lineal("#23253a"),    # traje y guantes azul oscuro
+    "HeroSkin": hex_lineal("#f0caa8"),
+    "HeroHair": hex_lineal("#16171f"),    # pelo y ojos
+    "HeroCape": hex_lineal("#1d2c78"),    # capa, un tono más oscuro que la armadura
 }
 
 
@@ -165,19 +180,79 @@ def esfera(bm, centro, radios):
     bmesh.ops.create_uvsphere(bm, u_segments=8, v_segments=6, radius=1.0, matrix=m)
 
 
+def cono(bm, base, punta, r, lados=5):
+    """Punta (mechones de pelo, filo del espadón): un prisma que se cierra casi en un punto."""
+    prisma(bm, base, punta, r, 0.002, lados)
+
+
+def placa(bm, a, b, c, d, grosor):
+    """Lámina con grosor entre cuatro esquinas: a-b arriba, c-d abajo (capa, faldones)."""
+    a, b, c, d = Vector(a), Vector(b), Vector(c), Vector(d)
+    n = (b - a).cross(c - a).normalized() * (grosor / 2)
+    delante = [bm.verts.new(p - n) for p in (a, b, d, c)]
+    detras = [bm.verts.new(p + n) for p in (a, b, d, c)]
+    bm.faces.new(delante)
+    bm.faces.new(detras[::-1])
+    for i in range(4):
+        j = (i + 1) % 4
+        bm.faces.new((delante[i], detras[i], detras[j], delante[j]))
+
+
+def con_ribete(a, b, c, d, grosor, borde, mat_pieza, mat_ribete, add, hueso):
+    """Placa de armadura con un borde plateado: una placa un poco mayor detrás asoma como ribete."""
+    a, b, c, d = Vector(a), Vector(b), Vector(c), Vector(d)
+    centro = (a + b + c + d) / 4
+    n = (b - a).cross(c - a).normalized()
+    if n.y < 0:  # el ribete va siempre por detrás (hacia el cuerpo), también en el lado espejado
+        n = -n
+    crecer = lambda p: centro + (p - centro) * (1 + borde) + n * grosor * 0.6
+    add(hueso, mat_ribete, lambda bm: placa(bm, crecer(a), crecer(b), crecer(c), crecer(d), grosor))
+    add(hueso, mat_pieza, lambda bm: placa(bm, a, b, c, d, grosor))
+
+
 def piezas():
-    """(hueso, material, función(bm) que dibuja la pieza). Solo lado izquierdo; se espeja con 'lado'."""
+    """(hueso, material, función(bm) que dibuja la pieza) del centro del cuerpo."""
     L = []
 
     def add(hueso, mat, fn):
         L.append((hueso, mat, fn))
 
-    add("Hips", "HeroCloth", lambda bm: prisma(bm, (0, 0, 0.92), (0, 0, 1.08), (0.17, 0.11), (0.16, 0.10)))
-    add("Spine1", "HeroArmor", lambda bm: prisma(bm, (0, 0, 1.08), (0, 0, 1.25), (0.15, 0.10), (0.15, 0.10)))
-    add("Spine2", "HeroArmor", lambda bm: prisma(bm, (0, 0, 1.25), (0, 0, 1.49), (0.19, 0.12), (0.21, 0.12)))
-    add("Neck", "HeroSkin", lambda bm: prisma(bm, (0, 0, 1.49), (0, 0, 1.60), 0.05, 0.05))
-    add("Head", "HeroSkin", lambda bm: esfera(bm, (0, 0, 1.69), (0.095, 0.11, 0.115)))
-    add("Head", "HeroSkin", lambda bm: caja(bm, (0, -0.115, 1.68), (0.03, 0.04, 0.05)))  # nariz: marca el frente
+    # Cadera, cinturón y faldón frontal en punta (con ribete plateado)
+    add("Hips", "HeroSuit", lambda bm: prisma(bm, (0, 0, 0.90), (0, 0, 1.07), (0.165, 0.11), (0.16, 0.10)))
+    add("Hips", "HeroSuit", lambda bm: prisma(bm, (0, 0, 1.02), (0, 0, 1.08), (0.172, 0.116), (0.172, 0.116)))
+    add("Hips", "HeroTrim", lambda bm: caja(bm, (0, -0.12, 1.05), (0.08, 0.02, 0.055)))   # hebilla
+    con_ribete((-0.10, -0.118, 1.02), (0.10, -0.118, 1.02), (-0.035, -0.135, 0.74), (0.035, -0.135, 0.74),
+               0.016, 0.12, "HeroArmor", "HeroTrim", add, "Hips")
+    # Torso: abdomen y pecho azules, línea plateada bajo el pecho y la estrella del pecho
+    add("Spine1", "HeroArmor", lambda bm: prisma(bm, (0, 0, 1.07), (0, 0, 1.25), (0.15, 0.10), (0.155, 0.10)))
+    add("Spine2", "HeroTrim", lambda bm: prisma(bm, (0, 0, 1.24), (0, 0, 1.265), (0.19, 0.125), (0.19, 0.125)))
+    add("Spine2", "HeroArmor", lambda bm: prisma(bm, (0, 0, 1.265), (0, 0, 1.47), (0.19, 0.122), (0.205, 0.125)))
+    add("Spine2", "HeroTrim", lambda bm: caja(bm, (0, -0.128, 1.36), (0.022, 0.012, 0.13)))
+    add("Spine2", "HeroTrim", lambda bm: caja(bm, (0, -0.128, 1.38), (0.08, 0.012, 0.022)))
+    # Cuello alto de la armadura
+    add("Spine2", "HeroArmor", lambda bm: prisma(bm, (0, 0, 1.46), (0, 0, 1.56), (0.085, 0.078), (0.075, 0.07)))
+    add("Spine2", "HeroTrim", lambda bm: prisma(bm, (0, 0, 1.555), (0, 0, 1.57), (0.077, 0.072), (0.077, 0.072)))
+    add("Neck", "HeroSkin", lambda bm: prisma(bm, (0, 0, 1.49), (0, 0, 1.61), 0.048, 0.048))
+    # Cabeza: cara, nariz (marca el frente), ojos y pelo negro en punta
+    add("Head", "HeroSkin", lambda bm: esfera(bm, (0, 0, 1.69), (0.095, 0.105, 0.115)))
+    add("Head", "HeroSkin", lambda bm: caja(bm, (0, -0.105, 1.68), (0.022, 0.03, 0.035)))
+    for sx in (-1, 1):
+        add("Head", "HeroHair", lambda bm, sx=sx: caja(bm, (0.036 * sx, -0.097, 1.705), (0.03, 0.012, 0.022)))
+    add("Head", "HeroHair", lambda bm: esfera(bm, (0, 0.03, 1.74), (0.106, 0.106, 0.10)))
+    mechones = [  # (base, punta, radio)
+        ((0, 0.05, 1.80), (0, 0.15, 1.88), 0.045), ((0.06, 0.03, 1.80), (0.13, 0.08, 1.87), 0.04),
+        ((-0.06, 0.03, 1.80), (-0.13, 0.08, 1.87), 0.04), ((0, -0.02, 1.82), (0.01, -0.03, 1.91), 0.04),
+        ((0.08, 0.0, 1.76), (0.15, 0.02, 1.74), 0.035), ((-0.08, 0.0, 1.76), (-0.15, 0.02, 1.74), 0.035),
+        ((0.04, -0.06, 1.79), (0.06, -0.115, 1.72), 0.03), ((-0.04, -0.06, 1.79), (-0.05, -0.115, 1.72), 0.03),
+        ((0, -0.07, 1.80), (0.0, -0.12, 1.745), 0.028), ((0, 0.09, 1.72), (0, 0.15, 1.64), 0.045),
+    ]
+    for base, punta, r in mechones:
+        add("Head", "HeroHair", lambda bm, b=base, p=punta, r=r: cono(bm, b, p, r))
+    # Capa: de los hombros a la cintura con el pecho, y de la cintura a las corvas con la cadera
+    add("Spine2", "HeroCape", lambda bm: placa(bm, (-0.17, 0.128, 1.47), (0.17, 0.128, 1.47),
+                                                (-0.21, 0.17, 1.06), (0.21, 0.17, 1.06), 0.02))
+    add("Hips", "HeroCape", lambda bm: placa(bm, (-0.21, 0.17, 1.065), (0.21, 0.17, 1.065),
+                                              (-0.25, 0.30, 0.50), (0.25, 0.30, 0.50), 0.02))
     return L
 
 
@@ -190,27 +265,48 @@ def piezas_lado(lado, s):
     def add(hueso, mat, fn):
         L.append((P + lado + hueso, mat, fn))
 
-    add("Shoulder", "HeroArmor", lambda bm: caja(bm, x((0.17, 0, 1.49)), (0.13, 0.15, 0.10)))
-    add("Arm", "HeroCloth", lambda bm: prisma(bm, x((0.17, 0, 1.46)), x((0.46, 0, 1.46)), 0.05, 0.04))
-    add("ForeArm", "HeroArmor", lambda bm: prisma(bm, x((0.46, 0, 1.46)), x((0.72, 0, 1.46)), 0.045, 0.035))
-    add("Hand", "HeroSkin", lambda bm: caja(bm, x((0.77, 0, 1.46)), (0.09, 0.04, 0.09)))
-    add("UpLeg", "HeroCloth", lambda bm: prisma(bm, x((0.09, 0, 0.98)), x((0.09, 0, 0.54)), 0.085, 0.065))
-    add("Leg", "HeroArmor", lambda bm: prisma(bm, x((0.09, 0, 0.54)), x((0.09, 0, 0.10)), 0.062, 0.045))
-    add("Foot", "HeroArmor", lambda bm: caja(bm, x((0.09, -0.07, 0.045)), (0.09, 0.24, 0.09)))
+    # Hombrera redonda con borde plateado
+    add("Shoulder", "HeroArmor", lambda bm: esfera(bm, x((0.205, 0, 1.50)), (0.095, 0.10, 0.075)))
+    add("Shoulder", "HeroTrim", lambda bm: caja(bm, x((0.22, 0, 1.452)), (0.14, 0.17, 0.022)))
+    add("Shoulder", "HeroTrim", lambda bm: esfera(bm, x((0.20, -0.085, 1.525)), (0.022, 0.018, 0.022)))
+    # Brazo: traje oscuro, brazal azul entre dos aros plateados, guante oscuro y dedos al aire
+    add("Arm", "HeroSuit", lambda bm: prisma(bm, x((0.17, 0, 1.46)), x((0.46, 0, 1.46)), 0.05, 0.042))
+    add("ForeArm", "HeroTrim", lambda bm: prisma(bm, x((0.465, 0, 1.46)), x((0.49, 0, 1.46)), 0.054, 0.054))
+    add("ForeArm", "HeroArmor", lambda bm: prisma(bm, x((0.49, 0, 1.46)), x((0.69, 0, 1.46)), 0.052, 0.046))
+    add("ForeArm", "HeroTrim", lambda bm: prisma(bm, x((0.69, 0, 1.46)), x((0.715, 0, 1.46)), 0.05, 0.05))
+    add("Hand", "HeroSuit", lambda bm: caja(bm, x((0.765, 0, 1.46)), (0.08, 0.045, 0.09)))
+    add("Hand", "HeroSkin", lambda bm: caja(bm, x((0.82, 0, 1.46)), (0.035, 0.035, 0.08)))
+    # Faldón lateral con ribete
+    con_ribete(x((0.105, -0.10, 1.00)), x((0.175, -0.06, 1.00)), x((0.115, -0.125, 0.82)), x((0.195, -0.08, 0.82)),
+               0.014, 0.14, "HeroArmor", "HeroTrim", lambda h, m, f: L.append((P + h, m, f)), "Hips")
+    # Pierna: muslo oscuro, rodillera, greba azul con aro plateado y bota con puntera plateada
+    add("UpLeg", "HeroSuit", lambda bm: prisma(bm, x((0.09, 0, 0.98)), x((0.09, 0, 0.56)), 0.085, 0.065))
+    add("Leg", "HeroArmor", lambda bm: caja(bm, x((0.09, -0.058, 0.55)), (0.10, 0.04, 0.11)))
+    add("Leg", "HeroTrim", lambda bm: caja(bm, x((0.09, -0.082, 0.55)), (0.04, 0.018, 0.065)))
+    add("Leg", "HeroArmor", lambda bm: prisma(bm, x((0.09, 0, 0.54)), x((0.09, 0, 0.12)), 0.065, 0.05))
+    add("Leg", "HeroTrim", lambda bm: prisma(bm, x((0.09, 0, 0.13)), x((0.09, 0, 0.16)), 0.058, 0.058))
+    add("Foot", "HeroArmor", lambda bm: caja(bm, x((0.09, -0.07, 0.045)), (0.095, 0.24, 0.09)))
+    add("Foot", "HeroTrim", lambda bm: caja(bm, x((0.09, -0.165, 0.04)), (0.10, 0.06, 0.08)))
     return L
 
 
 def espadon():
-    """Empuñadura en la mano derecha; hoja en la prolongación del antebrazo (-X en T-pose)."""
+    """Empuñadura en la mano derecha; hoja en la prolongación del antebrazo (-X en T-pose).
+    Como en el concept art: hoja azul con filos plateados, guarda plateada con gema azul y pomo plateado."""
     L = []
     mano = P + "RightHand"
 
     def add(mat, fn):
         L.append((mano, mat, fn))
 
-    add("HeroCloth", lambda bm: prisma(bm, (-0.78, 0, 1.46), (-0.89, 0, 1.46), 0.022, 0.022))
-    add("HeroSword", lambda bm: caja(bm, (-0.90, 0, 1.46), (0.03, 0.16, 0.035)))  # guarda
-    add("HeroSword", lambda bm: caja(bm, (-1.42, 0, 1.46), (1.04, 0.075, 0.014)))  # hoja
+    add("HeroSuit", lambda bm: prisma(bm, (-0.76, 0, 1.46), (-0.89, 0, 1.46), 0.021, 0.021))       # empuñadura
+    add("HeroTrim", lambda bm: esfera(bm, (-0.745, 0, 1.46), (0.028, 0.028, 0.028)))                # pomo
+    add("HeroTrim", lambda bm: caja(bm, (-0.90, 0, 1.46), (0.035, 0.22, 0.04)))                    # guarda
+    add("HeroArmor", lambda bm: caja(bm, (-0.905, 0, 1.46), (0.045, 0.05, 0.05)))                  # gema
+    add("HeroArmor", lambda bm: caja(bm, (-1.38, 0, 1.46), (0.92, 0.085, 0.018)))                  # hoja
+    for sy in (-1, 1):
+        add("HeroTrim", lambda bm, sy=sy: caja(bm, (-1.38, 0.0525 * sy, 1.46), (0.92, 0.02, 0.012)))  # filos
+    add("HeroTrim", lambda bm: prisma(bm, (-1.84, 0, 1.46), (-1.98, 0, 1.46), (0.009, 0.0625), 0.002, 4))  # punta
     return L
 
 
@@ -517,6 +613,52 @@ def crear_clips(arm):
         (38, reposo),
     ])
 
+    # --- Hit (12 f): retroceso del torso al recibir un golpe. En Unity va en una capa que solo mueve el torso,
+    # así no corta el ataque en curso (el evento OnHit del ataque sigue llegando).
+    def retroceso(fuerza):
+        p = golpe(giro=-10 * fuerza, inclina=-16 * fuerza, mano=guardia,
+                  izq=[("Y", 60 - 25 * fuerza), ("X", -25 * fuerza)])
+        p["Head"] = [("X", 14 * fuerza), ("Z", 6 * fuerza)]
+        return p
+
+    clip(arm, "Hit", [(0, reposo), (3, retroceso(1.0)), (7, retroceso(0.45)), (12, reposo)])
+
+    # --- Die (40 f, sin bucle): se tambalea, cae de rodillas y se desploma boca abajo. Las caderas bajan a mano
+    # (suelo=False) para que el cuerpo quede tendido sobre el suelo.
+    def caida(muslo, pierna, pie, tronco, frente, baja, avance, brazos, codo=1.0):
+        """muslo y pierna son relativos a la cadera; frente inclina todo el cuerpo hacia delante.
+        Las alturas salen de la geometría: muslo y espinilla miden 0,44 m. pie estira el pie hacia atrás
+        (empeine en el suelo), como al arrodillarse; con los pies planos la punta se clavaría en el suelo."""
+        p = {
+            "Hips": [("X", frente)],
+            "LeftUpLeg": [("X", muslo)], "RightUpLeg": [("X", muslo * 0.9)],
+            "LeftLeg": [("X", pierna)], "RightLeg": [("X", pierna * 0.95)],
+            "LeftArm": [("Y", brazos)], "RightArm": [("Y", -brazos * 0.5)],
+            "LeftForeArm": [("Z", -20 * codo)], "RightForeArm": [("Z", 25 * codo)],
+            # mientras cae, el espadón sigue en alto (como en la guardia) para no atravesar el suelo
+            "RightHand": [("Y", 150 * codo), ("X", 20 * codo)],
+        }
+        p.update(torso(giro=4, inclina=tronco))
+        p["Head"] = [("X", tronco * 0.4), ("Z", 25 if frente > 60 else 0)]
+        p["Hips.loc"] = (0, -avance, -baja)
+        p["LeftFoot"] = [("X", pie)]
+        p["RightFoot"] = [("X", pie)]
+        return p
+
+    tendido = caida(muslo=0, pierna=4, pie=88, tronco=0, frente=88, baja=0.79, avance=0.55, brazos=15, codo=0)
+
+    nueva_accion(arm, "Die", CLIP_FRAMES["Die"])
+    aplicar_pose(arm, reposo, 0, suelo=True)
+    aplicar_pose(arm, retroceso(1.2), 5, suelo=True)
+    # agachado sobre la punta de los pies: la rodilla baja sin que la punta del pie barra el suelo
+    aplicar_pose(arm, caida(muslo=-40, pierna=80, pie=50, tronco=15, frente=0, baja=0.11, avance=0.0, brazos=70), 10, suelo=False)
+    # de rodillas: muslo vertical, espinilla en el suelo, cadera a 0,52 m
+    aplicar_pose(arm, caida(muslo=0, pierna=88, pie=92, tronco=22, frente=0, baja=0.46, avance=0.0, brazos=78), 16, suelo=False)
+    # cayendo: muslo a 25°, rodilla a 8 cm del suelo
+    aplicar_pose(arm, caida(muslo=-30, pierna=70, pie=85, tronco=10, frente=55, baja=0.50, avance=0.2, brazos=60), 26, suelo=False)
+    aplicar_pose(arm, tendido, 33, suelo=False)
+    aplicar_pose(arm, tendido, 40, suelo=False)
+
 
 def _paso(a, b, t):
     """Pose intermedia (paso medio): interpola ángulos de dos poses de zancada y levanta la pierna libre."""
@@ -597,6 +739,8 @@ def vista_previa(arm, carpeta):
         "Light2": [0, 6, 9, 13],
         "Heavy1": [0, 12, 16, 20],
         "Heavy2": [0, 6, 17, 22],
+        "Hit": [3],
+        "Die": [16, 26, 40],
     }
     for nombre, frames in muestras.items():
         arm.animation_data.action = bpy.data.actions[nombre]
@@ -641,4 +785,5 @@ def main():
         print(f"RES vista previa en {preview}")
 
 
-main()
+if __name__ == "__main__":  # así los scripts de la bardo y el soldado pueden reutilizar las piezas y las poses
+    main()
