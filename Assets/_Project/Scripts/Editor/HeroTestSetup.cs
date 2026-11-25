@@ -39,7 +39,12 @@ namespace TheLastBeat.EditorTools
             ("Armature|Light2", "Light2", false, 9, 22),
             ("Armature|Heavy1", "Heavy1", false, 16, 34),
             ("Armature|Heavy2", "Heavy2", false, 17, 38),
+            ("Armature|Hit", "Hit", false, -1, 12),
+            ("Armature|Die", "Die", false, -1, 40),
         };
+
+        private const string TorsoMaskPath = Root + "/Hero_Torso.mask";
+        public const string HitLayer = "Golpes";
 
         [MenuItem("The Last Beat/Hero/Crear escenario de prueba de combate")]
         public static void Run()
@@ -206,9 +211,52 @@ namespace TheLastBeat.EditorTools
                 back.hasExitTime = true; back.exitTime = 0.92f; back.duration = 0.12f;
             }
 
+            // Morir: lo lanza DamageAnimations con CrossFade cuando el Health llega a 0. Sin salida: queda tendido
+            // hasta que Respawn hace Rebind y el Animator vuelve a Idle.
+            Add("Die", clips["Die"], new Vector3(780, 120, 0));
+
+            // Recibir golpe: capa aparte que solo mueve el torso (máscara) y pesa 0 salvo durante el golpe
+            // (DamageAnimations sube y baja su peso). Así el retroceso no corta el ataque ni su evento OnHit.
+            while (controller.layers.Length > 1) controller.RemoveLayer(controller.layers.Length - 1);
+            controller.AddLayer(HitLayer);
+            AnimatorControllerLayer[] layers = controller.layers;
+            layers[1].defaultWeight = 0f;
+            layers[1].avatarMask = TorsoMask();
+            controller.layers = layers;
+            AnimatorStateMachine golpes = controller.layers[1].stateMachine;
+            AnimatorState vacio = golpes.AddState("Vacio", new Vector3(250, 0, 0));
+            vacio.writeDefaultValues = false;
+            golpes.defaultState = vacio;
+            AnimatorState hit = golpes.AddState("Hit", new Vector3(250, 120, 0));
+            hit.motion = clips["Hit"];
+            AnimatorStateTransition fin = hit.AddTransition(vacio);
+            fin.hasExitTime = true; fin.exitTime = 0.9f; fin.duration = 0.1f;
+
             EditorUtility.SetDirty(controller);
             AssetDatabase.SaveAssets();
             return controller;
+        }
+
+        /// <summary>Máscara del torso, la cabeza y los brazos (sin piernas ni raíz) para la capa de golpes.</summary>
+        private static AvatarMask TorsoMask()
+        {
+            AvatarMask mask = AssetDatabase.LoadAssetAtPath<AvatarMask>(TorsoMaskPath);
+            if (mask == null)
+            {
+                mask = new AvatarMask();
+                AssetDatabase.CreateAsset(mask, TorsoMaskPath);
+            }
+
+            for (var part = AvatarMaskBodyPart.Root; part < AvatarMaskBodyPart.LastBodyPart; part++)
+            {
+                bool torso = part == AvatarMaskBodyPart.Body || part == AvatarMaskBodyPart.Head
+                             || part == AvatarMaskBodyPart.LeftArm || part == AvatarMaskBodyPart.RightArm
+                             || part == AvatarMaskBodyPart.LeftFingers || part == AvatarMaskBodyPart.RightFingers;
+                mask.SetHumanoidBodyPartActive(part, torso);
+            }
+
+            EditorUtility.SetDirty(mask);
+            return mask;
         }
 
         private static void SetupScene(AnimatorController controller)

@@ -41,11 +41,24 @@ Cada clip de ataque (`Light1`, `Light2`, `Heavy1`, `Heavy2`) lleva un **Animatio
 golpe conecta. Sin él, el ataque se anima pero **no hace daño**. En el Inspector del FBX: pestaña **Animation → selecciona el clip
 → Events → añade `OnHit`** en el frame del golpe. La duración del clip es la del golpe y el combo se encadena por ella.
 
-## 3. Reemplazar a la bardo
+## 3. La bardo (modelo de Tripo3D ya integrado)
 
-`Prefabs/Heroes/Bardo.prefab` es una cápsula con todo el comportamiento en la raíz (`NavMeshAgent`, `BardCompanion`, `SongBuff`,
-`Health`). Pon tu modelo como hijo y desactiva el `MeshRenderer` de la cápsula; **deja intactos el collider y los componentes**.
-Los parpadeos y el icono de la canción usan los renderers de los hijos, así que funcionan con tu material.
+`Prefabs/Heroes/Bardo.prefab` ya lleva el modelo 3D de la bardo con su guitarra: `Art/Models/Bard/Bard.fbx` (esqueleto Humanoid
+`mixamorig:*`, unos 16 000 triángulos entre cuerpo, guitarra y correa) como hijo `Modelo`, con `Bard.controller` y el componente
+`BardAnimator` en la raíz. La cápsula quedó con el `MeshRenderer` apagado y el collider (0.4 x 1.7 m) apoyado en el suelo; los
+componentes de comportamiento (`NavMeshAgent`, `BardCompanion`, `SongBuff`, `Health`) no cambian.
+
+- **Animator**: parámetros `Speed` (float), `Singing` (bool), `Hit`, `Die` y `Attack` (triggers; `Attack` no se usa, la bardo no ataca).
+  `BardAnimator` los mueve solo: velocidad del agente, estado de `SongBuff`, `Health.Damaged` y `BardCompanion.Died`. Al revivir
+  (`BardCompanion.Revive`) reinicia el Animator.
+- **Clips**: `Idle`, `Run`, `Sing` (bucle de 2 tiempos a 100 BPM), `Hit` y `Die`. La guitarra va rígida al torso (cuelga de una correa) y
+  las manos la agarran con IK, así que puede correr o caminar tocando. En `Hit` y `Die` las manos se sueltan.
+- **Si cambia el modelo**: el FBX se genera con `Tools/Blender/build_bard_tripo.py` a partir de los FBX de Tripo guardados en
+  `Tools/Blender/fuentes/Bard/` (cuerpo y guitarra; el comando completo está en la cabecera del script). Después, en Unity,
+  ejecuta **The Last Beat > Bardo > Instalar modelo 3D**: reconfigura el rig Humanoid, los clips, el controller, los materiales con
+  textura y el prefab. Es repetible.
+- **Para reemplazarla por otro modelo**: pon el tuyo como hijo y desactiva el `MeshRenderer` de la cápsula; deja intactos el collider
+  y los componentes. Los parpadeos y el icono de la canción usan los renderers de los hijos, así que funcionan con tu material.
 
 ## 4. Audio: ganchos listos
 
