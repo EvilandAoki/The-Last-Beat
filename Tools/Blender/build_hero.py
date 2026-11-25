@@ -24,6 +24,36 @@ from rig_common import (P, caja, clip, crear_armature, esfera, exportar, fijar_c
                         piernas, prisma, torso, _paso)
 
 HIT_FRAMES = {"Light1": 9, "Light2": 9, "Heavy1": 16, "Heavy2": 17}
+
+# Espadón siempre al frente en reposo y al correr: brazo bajado, codo a 85° y muñeca recta. Se eligió midiendo en el
+# esqueleto (hoja al frente con 5° hacia abajo, filo vertical, mano delante de la cadera derecha).
+BRAZO_FRENTE = [("Y", -80)]
+CODO_FRENTE = 85
+MANO_FRENTE = [("Y", 0)]
+
+# Puño: la mano derecha cierra los dedos alrededor de la empuñadura; la izquierda queda relajada.
+PUNO = {}
+for _dedo in ("Index", "Middle", "Ring", "Pinky"):
+    for _i, _g in zip((1, 2, 3), (65, 75, 55)):
+        PUNO[f"RightHand{_dedo}{_i}"] = [("Y", -_g)]
+        PUNO[f"LeftHand{_dedo}{_i}"] = [("Y", 25)]
+for _i, _g in zip((1, 2, 3), (20, 30, 30)):
+    PUNO[f"RightHandThumb{_i}"] = [("Y", -_g)]
+
+
+def con_puno(pose):
+    q = dict(PUNO)
+    q.update(pose)
+    return q
+
+
+def clip(arm, nombre, claves, suelo=True):
+    """rig_common.clip con el puño cerrado en todas las poses."""
+    return rc.clip(arm, nombre, [(f, con_puno(p)) for f, p in claves], suelo)
+
+
+def pose_con_puno(arm, pose, frame, suelo=True):
+    rc.aplicar_pose(arm, con_puno(pose), frame, suelo)
 rc.CLIP_FRAMES.update({"Idle": 60, "Run": 20, "Spin": 20, "Charge": 16, "Light1": 22, "Light2": 22, "Heavy1": 34, "Heavy2": 38,
                        "Hit": 12, "Die": 40})
 COLORES = rc.COLORES
@@ -132,12 +162,12 @@ def crear_malla(arm):
     return obj
 
 
-# Postura base: brazos abajo, espadón en alto hacia delante, rodillas ligeras.
+# Postura base: brazo izquierdo abajo, espadón al frente, rodillas ligeras.
 def base(**extra):
     p = {
-        "LeftArm": [("Y", 68)], "RightArm": [("Y", -64)],
-        "LeftForeArm": [("Z", -18)], "RightForeArm": [("Z", 30)],
-        "RightHand": [("Y", 150), ("X", 20)],
+        "LeftArm": [("Y", 68)], "RightArm": BRAZO_FRENTE,
+        "LeftForeArm": [("Z", -18)], "RightForeArm": [("Z", CODO_FRENTE)],
+        "RightHand": MANO_FRENTE,
         "LeftUpLeg": [("X", -4)], "RightUpLeg": [("X", 4)],
         "LeftLeg": [("X", 6)], "RightLeg": [("X", 6)],
     }
@@ -164,8 +194,8 @@ def crear_clips(arm):
         p = base(**torso(0, 1.5 * resp))
         p["Hips.loc"] = (0, 0, -0.01 * resp)
         p["Head"] = [("X", -1.0 * resp)]
-        p["RightHand"] = [("Y", 150 + 3 * sway), ("X", 20)]
-        p["RightArm"] = [("Y", -64 + 2 * sway)]
+        p["RightHand"] = [("Y", 3 * sway)]
+        p["RightArm"] = [("Y", -80 + 2 * sway)]
         return pies_planos(p)
 
     clip(arm, "Idle", [(0, idle(0, 0)), (30, idle(1, 1)), (60, idle(0, 0))])
@@ -177,9 +207,9 @@ def crear_clips(arm):
             "LeftUpLeg": [("X", -38 * a)], "RightUpLeg": [("X", 38 * a)],
             "LeftLeg": [("X", 8 + (55 if a < 0 else 6))], "RightLeg": [("X", 8 + (55 if a > 0 else 6))],
             "LeftFoot": [("X", -10 * a)], "RightFoot": [("X", 10 * a)],
-            "LeftArm": [("Y", 60), ("X", 40 * a)], "RightArm": [("Y", -60), ("X", -40 * a)],
-            "LeftForeArm": [("Z", -75)], "RightForeArm": [("Z", 75)],
-            "RightHand": [("Y", 150), ("X", 20)],
+            "LeftArm": [("Y", 60), ("X", 40 * a)], "RightArm": [("Y", -80), ("X", -8 * a)],
+            "LeftForeArm": [("Z", -75)], "RightForeArm": [("Z", CODO_FRENTE)],
+            "RightHand": MANO_FRENTE,
         }
         p.update(torso(giro=-8 * a, inclina=14))
         p["Hips.loc"] = (0, 0, fase_vertical)
@@ -193,9 +223,9 @@ def crear_clips(arm):
         (20, run(True, -0.02)),
     ], suelo=False)
 
-    guardia = [("Y", 150), ("X", 20)]  # espadón en alto, igual que Idle
+    guardia = MANO_FRENTE              # espadón al frente, igual que Idle
     medio = [("Y", 90), ("X", 10)]     # la muñeca gira entre la guardia y el golpe
-    reposo = golpe(mano=guardia)
+    reposo = golpe(brazo=BRAZO_FRENTE, codo=CODO_FRENTE, mano=guardia)
 
     # --- Spin (20 f, en bucle): postura de giro con el espadón extendido; Unity rota el modelo alrededor de Y.
     def spin(vaiven):
@@ -276,7 +306,7 @@ def crear_clips(arm):
     # --- Hit (12 f): retroceso del torso al recibir un golpe. En Unity va en una capa que solo mueve el torso,
     # así no corta el ataque en curso (el evento OnHit del ataque sigue llegando).
     def retroceso(fuerza):
-        p = golpe(giro=-10 * fuerza, inclina=-16 * fuerza, mano=guardia,
+        p = golpe(giro=-10 * fuerza, inclina=-16 * fuerza, brazo=BRAZO_FRENTE, codo=CODO_FRENTE, mano=guardia,
                   izq=[("Y", 60 - 25 * fuerza), ("X", -25 * fuerza)])
         p["Head"] = [("X", 14 * fuerza), ("Z", 6 * fuerza)]
         return p
@@ -308,16 +338,16 @@ def crear_clips(arm):
     tendido = caida(muslo=0, pierna=4, pie=88, tronco=0, frente=88, baja=0.79, avance=0.55, brazos=15, codo=0)
 
     rc.nueva_accion(arm, "Die", rc.CLIP_FRAMES["Die"])
-    rc.aplicar_pose(arm, reposo, 0, suelo=True)
-    rc.aplicar_pose(arm, retroceso(1.2), 5, suelo=True)
+    pose_con_puno(arm, reposo, 0, suelo=True)
+    pose_con_puno(arm, retroceso(1.2), 5, suelo=True)
     # agachado sobre la punta de los pies: la rodilla baja sin que la punta del pie barra el suelo
-    rc.aplicar_pose(arm, caida(muslo=-40, pierna=80, pie=50, tronco=15, frente=0, baja=0.11, avance=0.0, brazos=70), 10, suelo=False)
+    pose_con_puno(arm, caida(muslo=-40, pierna=80, pie=50, tronco=15, frente=0, baja=0.11, avance=0.0, brazos=70), 10, suelo=False)
     # de rodillas: muslo vertical, espinilla en el suelo, cadera a 0,52 m
-    rc.aplicar_pose(arm, caida(muslo=0, pierna=88, pie=92, tronco=22, frente=0, baja=0.46, avance=0.0, brazos=78), 16, suelo=False)
+    pose_con_puno(arm, caida(muslo=0, pierna=88, pie=92, tronco=22, frente=0, baja=0.46, avance=0.0, brazos=78), 16, suelo=False)
     # cayendo: muslo a 25°, rodilla a 8 cm del suelo
-    rc.aplicar_pose(arm, caida(muslo=-30, pierna=70, pie=85, tronco=10, frente=55, baja=0.50, avance=0.2, brazos=60), 26, suelo=False)
-    rc.aplicar_pose(arm, tendido, 33, suelo=False)
-    rc.aplicar_pose(arm, tendido, 40, suelo=False)
+    pose_con_puno(arm, caida(muslo=-30, pierna=70, pie=85, tronco=10, frente=55, baja=0.50, avance=0.2, brazos=60), 26, suelo=False)
+    pose_con_puno(arm, tendido, 33, suelo=False)
+    pose_con_puno(arm, tendido, 40, suelo=False)
 
 
 MUESTRAS = {
@@ -365,4 +395,5 @@ def main():
         print(f"RES vista previa en {preview}")
 
 
-main()
+if __name__ == "__main__":  # así otros scripts pueden importar las poses
+    main()
